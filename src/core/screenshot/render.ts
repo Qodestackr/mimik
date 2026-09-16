@@ -7,6 +7,8 @@ interface RenderOptions {
   quality?: number;
   viewport?: ScreenshotBounds;
   target?: boolean;
+  /** 'redactions' bakes only what must never be undone, leaving the rest editable. */
+  annotations?: 'all' | 'redactions';
 }
 
 export async function imageDimensions(file: Blob): Promise<{ width: number; height: number }> {
@@ -47,7 +49,11 @@ export async function renderScreenshot(screenshot: Screenshot, opts: RenderOptio
     );
   }
 
-  for (const a of screenshot.edits?.annotations ?? []) drawAnnotation(ctx, a, viewport.x, viewport.y);
+  const only = opts.annotations ?? 'all';
+  for (const a of screenshot.edits?.annotations ?? []) {
+    if (only === 'redactions' && a.type !== 'redact') continue;
+    drawAnnotation(ctx, a, viewport.x, viewport.y);
+  }
 
   return canvas.convertToBlob({ type: format, quality });
 }
