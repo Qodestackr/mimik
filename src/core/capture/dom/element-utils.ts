@@ -1,5 +1,5 @@
 export const FOCUSABLE_SELECTOR =
-  'a[href], button, input, select, textarea, [role="button"], [role="link"], [role="tab"], [role="menuitem"], [role="checkbox"], [role="radio"], [tabindex], [contenteditable="true"]';
+  'a[href], button, input, select, textarea, [role="button"], [role="link"], [role="tab"], [role="menuitem"], [role="checkbox"], [role="radio"], [role="option"], [tabindex], [contenteditable="true"]';
 
 const MAX_ELEMENT_RATIO = 0.8;
 
