@@ -298,16 +298,12 @@ export default function LibraryContent({ category }: LibraryContentProps) {
     await loadGuides();
   };
 
-  // Prefer a .mimik among several dropped files rather than only inspecting the
-  // first, and hand back whatever was dropped otherwise so the modal can explain
-  // itself. Silently ignoring a drop reads as the app being broken.
   const bundleFrom = (list: FileList | null): File | null => {
     const files = Array.from(list ?? []);
     if (files.length === 0) return null;
     return files.find((f) => f.name.toLowerCase().endsWith(`.${BUNDLE_EXTENSION}`)) ?? files[0];
   };
 
-  // Counting enter/leave keeps the overlay steady as the pointer crosses children.
   const handleDragEnter = (e: React.DragEvent) => {
     if (!e.dataTransfer.types.includes('Files')) return;
     dragDepth.current += 1;

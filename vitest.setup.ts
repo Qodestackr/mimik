@@ -99,11 +99,6 @@ class ESBuildAndJSDOMCompatibleTextEncoder extends TextEncoder {
     super();
   }
 
-  // The shim exists so the result is a Uint8Array from *this* realm — jsdom and
-  // esbuild otherwise hand back one that fails `instanceof` checks. The bytes
-  // themselves must still be real UTF-8: truncating each char to `charCodeAt(0)`
-  // turns "…" into "&" and every accented or CJK character into mojibake, which
-  // silently breaks any test that round-trips non-ASCII text.
   encode(input: string) {
     if (typeof input !== "string") {
       throw new TypeError("`input` must be a string");

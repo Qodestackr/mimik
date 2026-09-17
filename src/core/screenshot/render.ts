@@ -7,7 +7,6 @@ interface RenderOptions {
   quality?: number;
   viewport?: ScreenshotBounds;
   target?: boolean;
-  /** 'redactions' bakes only what must never be undone, leaving the rest editable. */
   annotations?: 'all' | 'redactions';
 }
 

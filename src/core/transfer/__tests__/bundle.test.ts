@@ -6,8 +6,6 @@ vi.mock('@/core/screenshot/render', () => ({
   renderScreenshot: async () => new Blob(['pixels'], { type: 'image/webp' }),
 }));
 vi.mock('@/core/export/markdown-export', () => ({
-  // Echo the step text, not just the title: a title-only stub makes every
-  // assertion about README scrubbing vacuous.
   exportGuideAsMarkdown: async (guide: Guide, steps: Step[]) =>
     [`# ${guide.title}`, ...steps.map((s) => s.description)].join('\n'),
 }));
@@ -97,8 +95,6 @@ describe('exportGuideAsBundle', () => {
       await exportGuideAsBundle(makeGuide(), [makeStep()], new Map([['step-1', makeScreenshot()]])),
     );
 
-    // The capture pipeline writes the value into the description as well, so
-    // dropping inputValue alone would still ship the secret.
     expect(JSON.stringify(manifest)).not.toContain('hunter2');
     expect(manifest.steps[0].description).toBe(`Type "${SCRUB_PLACEHOLDER}" in the password box`);
     expect(strFromU8(entries[README_PATH])).not.toContain('hunter2');
@@ -221,7 +217,6 @@ describe('exportGuideAsBundle', () => {
   });
 
   it('drops the captured text of the field that was typed into', async () => {
-    // getCleanText stores a truncated copy, so scrubbing the full value misses it.
     const long = 'x'.repeat(200);
     const step = makeStep({
       inputValue: long,
@@ -249,7 +244,6 @@ describe('exportGuideAsBundle', () => {
 
     expect(manifest.steps[0].elementMeta?.textContent).toBeNull();
     expect(JSON.stringify(manifest)).not.toContain('xxxxxxxxxx');
-    // The signals Guide Me actually matches on survive.
     expect(manifest.steps[0].elementMeta?.ariaLabel).toBe('Message');
     expect(manifest.steps[0].elementMeta?.cssSelector).toBe('div.editor');
   });

@@ -8,10 +8,6 @@ import type {
 } from '@/core/guides/types';
 import type { Annotation, ScreenshotEdits } from '@/core/screenshot/types';
 
-/**
- * Bump when the manifest shape changes. Readers reject anything newer than they
- * understand rather than guessing at fields they have never seen.
- */
 export const BUNDLE_VERSION = 1;
 
 export const BUNDLE_EXTENSION = 'mimik';
@@ -20,10 +16,8 @@ export const MANIFEST_PATH = 'manifest.json';
 export const SCREENSHOT_DIR = 'screenshots';
 export const README_PATH = 'README.md';
 
-/** A step as it travels: no `guideId`, no transient capture state. */
 export type BundleStep = Omit<Step, 'guideId' | 'aiPending' | 'screenshotId'>;
 
-/** Screenshot metadata plus the zip entry holding its pixels. */
 export interface BundleScreenshot {
   id: string;
   stepId: string;
@@ -46,7 +40,6 @@ export interface BundleManifest {
     createdAt: number;
   };
   sourceDomain: string | null;
-  /** What the exporter removed, so the import screen can say so. */
   redacted: {
     screenshots: boolean;
     inputValues: boolean;
@@ -75,11 +68,6 @@ const str = (value: unknown): string | undefined => (typeof value === 'string' ?
 const num = (value: unknown): number | undefined =>
   typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 
-/**
- * Geometry from an untrusted manifest ends up sizing an OffscreenCanvas and
- * allocating pixels, so it is clamped rather than merely checked for finiteness.
- * 32768 is past any real capture and far short of an allocation failure.
- */
 const MAX_DIMENSION = 32_768;
 const MAX_POINTS = 20_000;
 
@@ -95,7 +83,6 @@ const positive = (value: unknown): number | undefined => {
   return Math.min(n, MAX_DIMENSION);
 };
 
-/** Only schemes a browser can safely open. `javascript:` must never reach an href. */
 const SAFE_SCHEMES = ['http:', 'https:'];
 
 export function safeUrl(value: unknown): string {
@@ -134,10 +121,6 @@ const CALLOUT_VARIANTS: CalloutVariant[] = ['info', 'warning', 'error', 'success
 const oneOf = <T extends string>(value: unknown, allowed: T[]): T | undefined =>
   typeof value === 'string' && (allowed as string[]).includes(value) ? (value as T) : undefined;
 
-/**
- * Annotations are replayed onto a canvas, so a malformed one is dropped rather
- * than defaulted — a half-built redaction is worse than a missing decoration.
- */
 function annotations(value: unknown): Annotation[] | undefined {
   if (!Array.isArray(value)) return undefined;
   const kept = value.filter((a): a is Annotation => {
@@ -152,8 +135,6 @@ function annotations(value: unknown): Annotation[] | undefined {
       case 'arrow':
         return [a.x1, a.y1, a.x2, a.y2].every((n) => bounded(n) !== undefined) && typeof a.color === 'string';
       case 'text':
-        // `size` drives every derived coordinate; without it annotationBounds
-        // yields NaN and resizing persists NaN back into the recipient's DB.
         return (
           bounded(a.x) !== undefined &&
           bounded(a.y) !== undefined &&
@@ -162,8 +143,6 @@ function annotations(value: unknown): Annotation[] | undefined {
           positive(a.size) !== undefined
         );
       case 'freehand':
-        // An empty list makes Math.min(...[]) Infinity; an odd length leaves a
-        // dangling x with no y.
         return (
           Array.isArray(a.points) &&
           a.points.length >= 2 &&
@@ -224,9 +203,6 @@ function parseStep(value: unknown, index: number, stripInputValues: boolean): Bu
   if (variant) step.calloutVariant = variant;
   const color = str(value.calloutColor);
   if (color) step.calloutColor = color;
-  // A bundle that claims it stripped typed values does not get to carry them
-  // anyway. The claim is what the recipient is shown, so it is enforced here
-  // rather than trusted — Guide Me would otherwise replay the value into a page.
   const inputValue = str(value.inputValue);
   if (inputValue !== undefined && !stripInputValues) step.inputValue = inputValue;
   const meta = parseElementMeta(value.elementMeta);
@@ -235,7 +211,6 @@ function parseStep(value: unknown, index: number, stripInputValues: boolean): Bu
   return step;
 }
 
-/** Guide Me matches live DOM against these fields, so a partial one still has value. */
 function parseElementMeta(value: unknown): ElementMeta | null {
   if (!isObject(value)) return null;
   const tag = str(value.tag);
@@ -262,7 +237,6 @@ function parseElementMeta(value: unknown): ElementMeta | null {
   };
 }
 
-/** Zip entries are never written to disk, but a manifest should still only point inside itself. */
 function safeEntryPath(file: string): boolean {
   return file.startsWith(`${SCREENSHOT_DIR}/`) && !file.includes('..') && !file.includes('\\');
 }
@@ -281,8 +255,6 @@ function parseScreenshot(value: unknown): BundleScreenshot | null {
     id,
     stepId,
     file,
-    // An arbitrary type would become a blob: URL in the extension's own origin
-    // and the extension of whatever "Download original" writes to disk.
     mimeType: declaredType && SAFE_IMAGE_TYPES.includes(declaredType) ? declaredType : 'image/webp',
     width,
     height,
@@ -300,10 +272,6 @@ function parseScreenshot(value: unknown): BundleScreenshot | null {
   return shot;
 }
 
-/**
- * Validates a manifest from an untrusted file. Structural problems throw so the
- * import screen can explain them; individual malformed steps are dropped.
- */
 export function parseManifest(raw: unknown): BundleManifest {
   if (!isObject(raw)) throw new BundleError('not-a-bundle', 'manifest is not an object');
 

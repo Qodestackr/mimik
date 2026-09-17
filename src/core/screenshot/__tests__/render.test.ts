@@ -227,10 +227,6 @@ describe('renderScreenshot annotations', () => {
   });
 
   describe("annotations: 'redactions'", () => {
-    // This is the guarantee the bundle format rests on: the exported pixels must
-    // carry the redactions and nothing else. Inverting the filter would ship the
-    // concealed content in the clear, so it is asserted directly rather than via
-    // the caller.
     it('draws the redactions and leaves every other annotation out', async () => {
       const s = makeScreenshot({
         bounds: { x: 10, y: 10, width: 20, height: 20 },

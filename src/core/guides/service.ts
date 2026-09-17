@@ -129,14 +129,6 @@ export async function permanentlyDeleteGuide(id: string): Promise<void> {
   notifyGuidesChanged({ type: 'mutated' });
 }
 
-/**
- * Writes an imported bundle into this browser's library.
- *
- * Every identifier is minted fresh. Reusing the ones in the file would let a
- * shared guide silently overwrite a guide the recipient recorded themselves, and
- * the file comes from someone else's machine. Ownership flags reset for the same
- * reason: the guide is new here, whatever it was to its author.
- */
 export async function importGuide(bundle: ParsedBundle): Promise<string> {
   const { manifest, images } = bundle;
   const guideId = crypto.randomUUID();
@@ -166,8 +158,6 @@ export async function importGuide(bundle: ParsedBundle): Promise<string> {
       id,
       guideId,
       index,
-      // No background job exists to resolve a pending description here, and a
-      // step that waits for one spins in the editor forever.
       aiPending: undefined,
       ...(screenshotId ? { screenshotId } : {}),
     });

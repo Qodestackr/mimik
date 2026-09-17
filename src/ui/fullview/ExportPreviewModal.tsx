@@ -68,15 +68,9 @@ export default function ExportPreviewModal({ open, onOpenChange, guide, steps, s
   }, []);
 
   const videoPending = steps.length > VIDEO_AUTOPLAY_STEP_LIMIT && !videoRequested;
-  // Stripping the stored value cannot touch the pixels: a screenshot taken while a
-  // field held the text still shows it. Count the screenshots that will actually
-  // ship, not the steps — a typed step whose screenshot was deleted shows nothing.
   const typedStepCount = steps.filter((step) => step.inputValue && screenshots.has(step.id)).length;
   const { cover, stepDescriptions, resolution, screenshots: withScreenshots, stepUrls, imageScale } = options;
 
-  // Only the settings the HTML actually reflects. The bundle settings cannot
-  // change the preview, and re-encoding every screenshot when one is toggled
-  // blanks the pane for seconds on a long guide.
   const previewOptions = useMemo<ExportOptions>(
     () => ({ ...DEFAULT_EXPORT_OPTIONS, cover, screenshots: withScreenshots, stepUrls, imageScale, stepDescriptions }),
     [cover, withScreenshots, stepUrls, imageScale, stepDescriptions],

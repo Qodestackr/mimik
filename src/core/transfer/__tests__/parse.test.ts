@@ -137,8 +137,6 @@ describe('parseManifest', () => {
         ],
       }),
     );
-    // Otherwise it becomes a blob: URL in the extension origin, and the
-    // extension of whatever "Download original" writes to disk.
     expect(parsed.screenshots[0].mimeType).toBe('image/webp');
   });
 
@@ -181,8 +179,6 @@ describe('parseManifest', () => {
         steps: [{ id: 's', index: 0, description: 'x', action: 'input', url: '', timestamp: 1, inputValue: 'hunter2' }],
       }),
     );
-    // The recipient is shown the claim, so it is enforced rather than trusted —
-    // Guide Me would otherwise replay the value into a live page.
     expect(parsed.steps[0].inputValue).toBeUndefined();
   });
 
@@ -261,8 +257,6 @@ describe('readBundle', () => {
   });
 
   it('refuses a zip bomb before inflating it', async () => {
-    // 400MB of zeros compresses to a few hundred KB; the guard must fire on the
-    // declared sizes, not on the memory it would otherwise already hold.
     const huge = new Uint8Array(210 * 1024 * 1024);
     const bomb = bundleFile({ [MANIFEST_PATH]: strToU8(JSON.stringify(manifest())), 'screenshots/big.webp': huge });
     expect(bomb.size).toBeLessThan(5 * 1024 * 1024);

@@ -71,8 +71,6 @@ describe('importGuide', () => {
   });
 
   it('cannot overwrite a step the recipient already has', async () => {
-    // Step ids come from the file, so this is the collision that can actually
-    // happen: a guide the recipient recorded already owns 'step-1'.
     await createGuide('mine');
     const mine: Step = {
       id: 'step-1',

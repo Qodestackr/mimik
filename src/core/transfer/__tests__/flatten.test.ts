@@ -92,7 +92,6 @@ describe('flattenScreenshot', () => {
         }),
       );
 
-      // bounds are CSS pixels: 150 * 2 = 300 device px, then rebased by the crop's x.
       expect(meta.edits?.target).toMatchObject({ x: 200, y: 150, width: 100, height: 50 });
       expect(meta.bounds).toBeUndefined();
       expect(meta.pixelRatio).toBeUndefined();

@@ -15,10 +15,6 @@ import { formatRelativeTime } from '@/lib/utils';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/components/ui/tooltip';
 import FaviconImg from '@/ui/shared/FaviconImg';
 
-/**
- * The dashboard is where the library, import and export live. Reuses an open
- * dashboard tab rather than stacking up duplicates.
- */
 async function openDashboard() {
   const url = getExtensionURL('/fullview.html');
   const tabs = await queryTabs({ url });
