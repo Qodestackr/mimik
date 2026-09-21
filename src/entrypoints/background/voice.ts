@@ -1,7 +1,7 @@
 import { CaptureState } from '@/core/capture/machine';
 import { hasVoiceApiKey, VOICE_KEY_SETTINGS } from '@/core/capture/voice/api-key';
 import { narrationUpdates } from '@/core/capture/voice/narration-updates';
-import { applyNarrationToSteps, findExistingStepIds, getStepsForGuide } from '@/core/guides/service';
+import { applyNarrationToSteps, findExistingStepIds, getStepsForGuide, saveTranscript } from '@/core/guides/service';
 import { localStorage, onMessage as onRuntimeMessage } from '@/lib/browser-api';
 import { logger } from '@/lib/logger';
 import {
@@ -263,10 +263,13 @@ export async function stopVoiceNarration(guideId: string): Promise<void> {
   }
 }
 
-async function applyNarration(guideId: string, result: VoiceResultEvent['result']): Promise<void> {
+export async function applyNarration(guideId: string, result: VoiceResultEvent['result']): Promise<void> {
   const final = transcribingGuideId === guideId;
   try {
     if (final) transcribingGuideId = null;
+    await saveTranscript(guideId, result.transcript).catch((error: unknown) =>
+      logger.warn('voice: the transcript could not be stored', error),
+    );
     const narrated = result.descriptions.map((entry) => entry.stepId);
     const surviving = await findExistingStepIds(narrated);
     const updates = narrationUpdates(result, surviving);
