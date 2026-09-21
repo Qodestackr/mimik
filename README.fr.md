@@ -160,6 +160,12 @@ Parle à voix haute pendant que tu enregistres et Mimik transforme ce que tu as 
 d'étapes. L'audio est transcrit avec ta propre clé (OpenAI ou Groq) puis rattaché à l'étape
 correspondante, donc tu narres une fois au lieu d'écrire chaque étape à la main.
 
+La transcription complète est conservée, pas seulement ce qui a atterri dans une étape. Ouvre
+**Transcription** sur un guide pour voir tout ce que tu as dit, y compris les phrases rattachées à
+rien, et ajoute celles que tu veux à une étape. Modifier une étape ne détruit pas non plus
+l'original parlé : l'éditeur peut toujours remettre ce que tu as réellement dit. La transcription
+reste sur ton appareil, ne fait jamais partie d'un guide exporté et est supprimée avec le guide.
+
 <img src="https://github.com/user-attachments/assets/061fddc7-da65-4641-8b39-d30b80c36531" alt="Narration vocale" width="800" />
 
 <div align="right">

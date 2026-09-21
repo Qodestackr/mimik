@@ -162,6 +162,12 @@ Talk through the workflow out loud while you record and Mimik turns what you sai
 descriptions. Audio is transcribed with your own key (OpenAI or Groq) and matched to the steps it
 belongs to, so you narrate once instead of writing every step by hand.
 
+The full transcript is kept, not just the parts that made it into a step. Open **Transcript** on a
+guide to see everything you said, including the lines nothing was matched to, and add any of them to
+a step. Editing a step never destroys the spoken original either — the step editor can always put
+back what you actually said. The transcript stays on your device, is never part of an exported guide, and is
+deleted with the guide.
+
 <img src="https://github.com/user-attachments/assets/061fddc7-da65-4641-8b39-d30b80c36531" alt="Voice narration" width="800" />
 
 <div align="right">

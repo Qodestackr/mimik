@@ -36,6 +36,7 @@ src/
 │   │   ├── events/           # Event capture system
 │   │   │   ├── handlers.ts      # CaptureController class + startCapture
 │   │   │   └── input-session.ts # InputSession (typing lifecycle)
+│   │   ├── voice/            # Narration: energy gate, batching, transcribe, attribute, transcript
 │   │   ├── machine.ts        # xstate capture state machine
 │   │   ├── session.ts        # CaptureSession (lifecycle manager)
 │   │   ├── spa-nav.ts        # SPA navigation tracking
@@ -50,7 +51,7 @@ src/
 │   │   ├── scrub.ts             # scrubValues (removes typed values from prose)
 │   │   ├── bundle.ts            # exportGuideAsBundle (zip via fflate)
 │   │   └── parse.ts             # readBundle (unzip + validate)
-│   └── guides/              # Data layer: types, Dexie DB, CRUD service
+│   └── guides/              # Data layer: types, Dexie DB, CRUD service, transcript timeline
 ├── entrypoints/             # Chrome extension entry points (WXT)
 │   ├── background/          # Service worker: state machine, message handlers, tab management
 │   ├── content.ts           # Content script: CaptureSession, event listeners
@@ -100,7 +101,7 @@ src/
 |-------|------|---------|
 | Capture lifecycle | xstate | State machine (IDLE ↔ RECORDING ↔ PAUSED) in background service worker |
 | Fullview UI | Zustand | Search modal, guide counts, active guide data |
-| Persistence | Dexie (IndexedDB) | Guides, steps, screenshots, snapshots, cached voice clips |
+| Persistence | Dexie (IndexedDB) | Guides, steps, screenshots, snapshots, cached voice clips, narration transcripts |
 | Service worker recovery | sessionStorage | xstate machine snapshot persistence |
 | Background → Sidepanel | Port messaging | Real-time state broadcast |
 | Cross-context sync | BroadcastChannel | Guide mutations (star, delete) across sidepanel/fullview |
@@ -185,6 +186,59 @@ Extraction walks up from the target element to find:
 - Nearest semantic container (form, nav, dialog, section) or 3 levels up
 - Nearest heading
 - Sibling interactive elements in the same container (max 10)
+
+## Narration transcript (`core/capture/voice/`)
+
+Attribution is a guess, so the words are kept independently of it. `assignSegments` returns a
+`TranscriptLine` for **every** segment the transcriber returned — the ones a step took, the ones
+nothing claimed (`stepId: null`), and the ones `rejectReason` threw away, with the reason on the
+line. `runNarrationPipeline` collects them into `NarrationResult.transcript`, stamped with the audio
+slice's `audioEpochMs`, and `applyNarration` in the background writes that to the `transcripts`
+table (Dexie `version(4)`) *before* it applies anything to steps — a recording where nothing was
+attributed is exactly the case this exists for, and it writes no step at all, so `saveTranscript`
+announces itself on the guides channel rather than relying on `applyNarrationToSteps` to do it.
+
+One row per transcribed slice, because mid-recording flushes land separately from the tail.
+`flushedUpToSeconds` in the voice host guarantees the slices never overlap, so `mergeTranscripts`
+(`core/guides/transcript.ts`) can order them by wall clock with nothing to de-duplicate. The
+`epochMs` on each row is what makes that possible: a flush slice's seconds are relative to its own
+start, not the recording's.
+
+`Step.narratedDescription` holds what narration heard, verbatim. `applyNarrationToSteps` writes it,
+and only `deleteTranscripts` clears it, so an edit replaces `description` and leaves it, and `restoreNarratedDescription`
+can put the spoken text back with its `narration` source. That is the whole answer to "an edit
+overwrote what I said": the step editor offers the restore only while the two actually differ.
+
+The dashboard's transcript panel is the answer to the other half. It shares the side-panel column
+with version history, so the store keeps them mutually exclusive, and the TopNav button only appears
+when `hasTranscript` says there is one — which is re-read on every guide reload, because transcription
+is still running when the dashboard opens after a recording. An unattributed line offers to append
+itself to the nearest step: `nearestStepId` looks **forward** first, since onboarding asks users to
+say what they are about to do and then do it. Accepting that writes the step onto the line
+(`attachTranscriptLine`, flagged `addedByHand`) as well as into the description, so the line reads as
+used from then on and a second visit to the panel cannot append the same words twice. Restoring that
+step's spoken original deletes the appended sentence, so `restoreNarratedDescription` releases the
+lines it just wiped out and they return to unused — otherwise the panel would claim a step still
+carries words it no longer has, with no way left to re-add them. Only hand-added lines are released;
+an attribution narration made itself is a record of what the pipeline decided and stays put.
+
+Privacy is the cost of keeping this. A verbatim transcript is more sensitive than per-step text —
+smart blur cannot reach speech, so a password read aloud lands in it as plain text. It is therefore
+local-only: never in an exported guide, deletable on its own from the panel — which also clears
+`narratedDescription` from the steps and from the snapshots that copied them, so “gone for good” is
+true — and swept by `permanentlyDeleteGuide` alongside snapshots. `mergeGuideInto` re-keys
+transcripts onto the guide it merges into and remembers the redirect, and `saveTranscript` resolves
+the owning guide before it writes — by that redirect, or by the guide a line's step now sits on —
+because an insert-recording deletes its staging guide before narration lands, and a slice where
+nothing was attributed has no step to resolve through. Stripping the spoken text rewrites the stored
+snapshot steps, so `deleteTranscripts` recomputes each `contentHash` too, or version history would
+stop collapsing two identical saves into one row. Nothing was added to any export path, and nothing
+should be.
+
+What is *not* recoverable: speech the energy gate never detected, and a mis-transcription. Both need
+the audio, and the audio is released at `recorder.stop()`. Keeping it is still a separate bet (see
+the voice-over section) — what the transcript buys is the paid-for text that used to be thrown away
+between the API response and the step write.
 
 ## Export Formats
 

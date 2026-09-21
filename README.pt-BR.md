@@ -160,6 +160,12 @@ Fala em voz alta enquanto grava e o Mimik transforma o que tu disse nas descriç
 áudio é transcrito com a tua própria key (OpenAI ou Groq) e casado com o passo a que pertence,
 então tu narra uma vez em vez de escrever cada passo na mão.
 
+A transcrição inteira fica guardada, não só o que virou passo. Abre **Transcrição** num guia pra ver
+tudo o que tu falou, inclusive as falas que não casaram com nada, e adiciona qualquer uma delas a um
+passo. Editar um passo também não destrói o original falado: o editor sempre consegue devolver o que
+tu realmente disse. A transcrição fica no teu dispositivo, nunca faz parte de um guia exportado e é apagada
+junto com o guia.
+
 <img src="https://github.com/user-attachments/assets/061fddc7-da65-4641-8b39-d30b80c36531" alt="Narração por voz" width="800" />
 
 <div align="right">
