@@ -1,6 +1,7 @@
 import type { AIApiKeys } from '@/core/capture/ai/keys';
 import type { AIProviderKey } from '@/core/capture/ai/models';
 import type { VoiceProvider } from '@/core/capture/voice/transcribe';
+import type { TranscriptLine } from '@/core/capture/voice/types';
 import type { BrandLogo } from '@/core/export/branding';
 import type { ExportOptions } from '@/core/export/options';
 import type { VoiceoverApiKeys } from '@/core/export/voiceover/config';
@@ -38,6 +39,7 @@ export interface Step {
   elementMeta?: ElementMeta;
   inputValue?: string;
   descriptionSource?: DescriptionSource;
+  narratedDescription?: string;
   aiPending?: boolean;
   blockType?: BlockType;
   calloutVariant?: CalloutVariant;
@@ -110,6 +112,14 @@ export interface ElementMeta {
   rect: { x: number; y: number; width: number; height: number };
   devicePixelRatio: number;
   clickPoint?: { x: number; y: number };
+}
+
+export interface GuideTranscript {
+  id: string;
+  guideId: string;
+  epochMs: number;
+  createdAt: number;
+  lines: TranscriptLine[];
 }
 
 export interface VoiceClip {
