@@ -42,13 +42,33 @@ function activeIndex(chapters: VideoChapter[], time: number): number {
   return -1;
 }
 
+const WAVE_BARS = [3, 7, 4, 8, 5];
+
+function SpokenMark({ talking }: { talking: boolean }) {
+  return (
+    <span role="img" aria-label={i18n.t('videoPlayer.spoken')} className="mt-1 flex shrink-0 items-center gap-[2px]">
+      {WAVE_BARS.map((height, i) => (
+        <span
+          key={height}
+          className={`w-[2px] rounded-[1px] ${talking ? 'animate-talk bg-lavender' : 'bg-lavender/70'}`}
+          style={{ height: `${height}px`, animationDelay: talking ? `${i * 90}ms` : undefined }}
+        />
+      ))}
+    </span>
+  );
+}
+
 function StepList({
   chapters,
   index,
+  narrated,
+  playing,
   onJump,
 }: {
   chapters: VideoChapter[];
   index: number;
+  narrated: boolean;
+  playing: boolean;
   onJump: (n: number) => void;
 }) {
   const list = useRef<HTMLElement>(null);
@@ -73,6 +93,7 @@ function StepList({
         >
           <span className={`mt-1.5 size-1.5 shrink-0 rounded-full ${KIND_DOT[chapter.kind]}`} />
           <span className="min-w-0 flex-1 text-[10.5px] leading-snug text-white/80">{chapter.title}</span>
+          {narrated && chapter.spoken && <SpokenMark talking={playing && i === index} />}
           <span className="pt-0.5 font-mono text-[9px] tabular-nums text-white/40">{formatClock(chapter.start)}</span>
         </button>
       ))}
@@ -80,7 +101,7 @@ function StepList({
   );
 }
 
-function PlayerBody({ chapters }: { chapters: VideoChapter[] }) {
+function PlayerBody({ chapters, narrated }: { chapters: VideoChapter[]; narrated: boolean }) {
   const remote = useMediaRemote();
   const time = useMediaState('currentTime');
   const duration = useMediaState('duration');
@@ -170,7 +191,7 @@ export default function VideoStepPlayer({ src, type, chapters, narrated = false 
       className="flex size-full"
       style={{ backgroundColor: FRAME_FILL }}
     >
-      <PlayerBody chapters={chapters} />
+      <PlayerBody chapters={chapters} narrated={narrated} />
     </MediaPlayer>
   );
 }

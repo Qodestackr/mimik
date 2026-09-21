@@ -22,7 +22,7 @@ import {
   VOICE_LEAD_SEC,
   voiceTimeline,
 } from '@/core/export/video-support';
-import { COVER_SEGMENT } from '@/core/export/voiceover/script';
+import { COVER_SEGMENT, stepNarration } from '@/core/export/voiceover/script';
 import { actionSteps, calloutAccent, isBlock } from '@/core/guides/blocks';
 import type { BlockType, Guide, Screenshot, Step } from '@/core/guides/types';
 import type { Ctx } from '@/core/screenshot/draw';
@@ -704,6 +704,7 @@ export interface VideoChapter {
   kind: StepKind;
   start: number;
   end: number;
+  spoken: boolean;
 }
 
 export function stepKind(step: Step): StepKind {
@@ -736,6 +737,7 @@ export function videoChapters(frames: Step[], cover: boolean, fps = FPS, timelin
     kind: stepKind(step),
     start: offset + starts[index] / fps,
     end: index === frames.length - 1 ? last : offset + starts[index + 1] / fps,
+    spoken: stepNarration(step).length > 0,
   }));
 }
 

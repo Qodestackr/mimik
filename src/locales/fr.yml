@@ -441,6 +441,7 @@ videoPlayer:
   speed: "Vitesse de lecture"
   mute: "Couper le son"
   unmute: "Activer le son"
+  spoken: "Étape narrée"
 
 exportMenu:
   docx: DOCX

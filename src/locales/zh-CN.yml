@@ -441,6 +441,7 @@ videoPlayer:
   speed: "播放速度"
   mute: "静音"
   unmute: "取消静音"
+  spoken: "已配音的步骤"
 
 exportMenu:
   docx: DOCX

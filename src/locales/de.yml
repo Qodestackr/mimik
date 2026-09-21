@@ -372,6 +372,7 @@ videoPlayer:
   speed: "Wiedergabegeschwindigkeit"
   mute: "Stummschalten"
   unmute: "Ton einschalten"
+  spoken: "Vertonter Schritt"
 
 exportMenu:
   docx: "DOCX"
