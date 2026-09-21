@@ -180,8 +180,9 @@ export function createVoiceHost(): VoiceHost {
     pending += 1;
     try {
       const result = await narrateRecording(slice, [request.step], request.settings);
-      if (result.descriptions.length > 0) deliver(request.guideId, result);
-      return { ok: true, flushed: result.descriptions.length > 0 };
+      const attributed = result.descriptions.length > 0;
+      if (attributed || result.transcript.lines.length > 0) deliver(request.guideId, result);
+      return { ok: true, flushed: attributed };
     } finally {
       pending -= 1;
     }
