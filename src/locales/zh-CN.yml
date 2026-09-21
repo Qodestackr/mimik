@@ -46,6 +46,9 @@ library:
   openInFullView: 在完整视图中打开
   openDashboard: "打开面板"
   openDashboardHint: "在那里浏览、导入和导出指南"
+  duplicate: 创建副本
+  copyOfTitle: "$1 的副本"
+  duplicateFailed: 无法复制此指南
 
 guideme:
   live: 实时

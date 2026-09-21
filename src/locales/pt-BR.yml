@@ -46,6 +46,9 @@ library:
   openInFullView: Abrir em tela cheia
   openDashboard: "Abrir painel"
   openDashboardHint: "Veja, importe e exporte guias por lá"
+  duplicate: Duplicar
+  copyOfTitle: "Cópia de $1"
+  duplicateFailed: Não foi possível duplicar este guia
 
 guideme:
   live: Ao vivo

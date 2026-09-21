@@ -46,6 +46,9 @@ library:
   openInFullView: Abrir en vista completa
   openDashboard: "Abrir panel"
   openDashboardHint: "Consulta, importa y exporta guías allí"
+  duplicate: Duplicar
+  copyOfTitle: "Copia de $1"
+  duplicateFailed: No se pudo duplicar esta guía
 
 guideme:
   live: En vivo
