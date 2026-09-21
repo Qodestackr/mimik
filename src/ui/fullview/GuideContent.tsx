@@ -202,7 +202,12 @@ export default function GuideContent({ guideId, initialStepId, initialTool }: Gu
     await updateStepDescription(stepId, description, 'manual');
     setData((prev) => {
       if (!prev) return prev;
-      return { ...prev, steps: prev.steps.map((s) => (s.id === stepId ? { ...s, description } : s)) };
+      return {
+        ...prev,
+        steps: prev.steps.map((s) =>
+          s.id === stepId ? { ...s, description, descriptionSource: 'manual' as const } : s,
+        ),
+      };
     });
   }, []);
 
