@@ -55,6 +55,7 @@ export default function ExportPreviewModal({ open, onOpenChange, guide, steps, s
   const [videoSupported, setVideoSupported] = useState(false);
   const [mode, setMode] = useState<PreviewMode>('document');
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [videoType, setVideoType] = useState<'video/mp4' | 'video/webm'>('video/mp4');
   const [videoChapters, setVideoChapters] = useState<VideoChapter[]>([]);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const downloadAbort = useRef<AbortController | null>(null);
@@ -140,6 +141,7 @@ export default function ExportPreviewModal({ open, onOpenChange, guide, steps, s
         const {
           blob,
           chapters,
+          extension,
           voiceoverError: failed,
         } = await exportGuideAsVideo(
           guide,
@@ -158,6 +160,7 @@ export default function ExportPreviewModal({ open, onOpenChange, guide, steps, s
         );
         if (controller.signal.aborted) return;
         url = URL.createObjectURL(blob);
+        setVideoType(extension === 'webm' ? 'video/webm' : 'video/mp4');
         setVideoChapters(chapters);
         setVoiceoverError(failed ?? null);
         setNarratedSeconds(
@@ -583,6 +586,7 @@ export default function ExportPreviewModal({ open, onOpenChange, guide, steps, s
                       <VideoStepPlayer
                         key={videoUrl}
                         src={videoUrl}
+                        type={videoType}
                         chapters={videoChapters}
                         narrated={voiceover && !voiceoverError}
                       />

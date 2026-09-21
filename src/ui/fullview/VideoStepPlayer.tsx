@@ -25,6 +25,7 @@ const KIND_DOT: Record<StepKind, string> = {
 
 interface VideoStepPlayerProps {
   src: string;
+  type: 'video/mp4' | 'video/webm';
   chapters: VideoChapter[];
   narrated?: boolean;
 }
@@ -149,15 +150,17 @@ function PlayerBody({ chapters }: { chapters: VideoChapter[] }) {
         </div>
       </div>
 
-      {chapters.length > 0 && <StepList chapters={chapters} index={index} onJump={jump} />}
+      {chapters.length > 0 && (
+        <StepList chapters={chapters} index={index} narrated={narrated} playing={!paused} onJump={jump} />
+      )}
     </>
   );
 }
 
-export default function VideoStepPlayer({ src, chapters, narrated = false }: VideoStepPlayerProps) {
+export default function VideoStepPlayer({ src, type, chapters, narrated = false }: VideoStepPlayerProps) {
   return (
     <MediaPlayer
-      src={{ src, type: 'video/mp4' }}
+      src={{ src, type }}
       autoPlay={!narrated}
       muted={!narrated}
       playsInline
