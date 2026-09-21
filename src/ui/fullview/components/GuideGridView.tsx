@@ -1,4 +1,4 @@
-import { MoreVertical, RotateCcw, Star, StarOff, Trash2 } from 'lucide-react';
+import { Copy, MoreVertical, RotateCcw, Star, StarOff, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { i18n } from '#imports';
 import { formatDate } from '@/lib/utils';
@@ -12,6 +12,7 @@ interface GuideGridViewProps {
   onTrash: (e: React.MouseEvent, id: string) => void;
   onRestore: (e: React.MouseEvent, id: string) => void;
   onPermanentDelete: (e: React.MouseEvent, id: string) => void;
+  onDuplicate: (e: React.MouseEvent, id: string) => void;
 }
 
 function MimikEyes() {
@@ -34,6 +35,7 @@ function CardMenu({
   onTrash,
   onRestore,
   onPermanentDelete,
+  onDuplicate,
 }: {
   guideId: string;
   starred: boolean;
@@ -42,6 +44,7 @@ function CardMenu({
   onTrash: (e: React.MouseEvent, id: string) => void;
   onRestore: (e: React.MouseEvent, id: string) => void;
   onPermanentDelete: (e: React.MouseEvent, id: string) => void;
+  onDuplicate: (e: React.MouseEvent, id: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -90,6 +93,14 @@ function CardMenu({
       },
     });
     items.push({
+      icon: <Copy size={13} />,
+      label: i18n.t('library_duplicate'),
+      onClick: (e) => {
+        onDuplicate(e, guideId);
+        setOpen(false);
+      },
+    });
+    items.push({
       icon: <Trash2 size={13} />,
       label: i18n.t('library_moveToTrash'),
       onClick: (e) => {
@@ -134,7 +145,14 @@ function CardMenu({
   );
 }
 
-export default function GuideGridView({ category, onStar, onTrash, onRestore, onPermanentDelete }: GuideGridViewProps) {
+export default function GuideGridView({
+  category,
+  onStar,
+  onTrash,
+  onRestore,
+  onPermanentDelete,
+  onDuplicate,
+}: GuideGridViewProps) {
   const { guides, thumbnails } = useFullview((s) => ({
     guides: s.guides,
     thumbnails: s.thumbnails,
@@ -178,6 +196,7 @@ export default function GuideGridView({ category, onStar, onTrash, onRestore, on
                 onTrash={onTrash}
                 onRestore={onRestore}
                 onPermanentDelete={onPermanentDelete}
+                onDuplicate={onDuplicate}
               />
             </div>
           </div>

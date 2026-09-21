@@ -1,6 +1,7 @@
 import {
   Check,
   ChevronRight,
+  Copy,
   Download,
   FileText,
   History,
@@ -10,9 +11,9 @@ import {
   Star,
   Trash2,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { i18n } from '#imports';
-import { createSnapshot } from '@/core/guides/service';
+import { createSnapshot, duplicateGuide } from '@/core/guides/service';
 import { logger } from '@/lib/logger';
 import { useFullview } from '@/stores/fullview';
 import { Button } from '@/ui/components/ui/button';
@@ -24,6 +25,10 @@ import { navigate } from './router';
 interface TopNavProps {
   route: Route;
 }
+
+// Long enough to swallow the tail of a fast multi-click, short enough that deliberately forking a
+// copy again is never blocked for a noticeable moment.
+const DUPLICATE_SETTLE_MS = 700;
 
 const navItems = [
   { key: 'all' as const, labelKey: 'fullview_allGuides' as const, icon: FileText },
@@ -64,6 +69,32 @@ export default function TopNav({ route }: TopNavProps) {
     hasTranscript: s.hasTranscript,
   }));
   const [exportOpen, setExportOpen] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
+  const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => clearTimeout(settleTimer.current ?? undefined), []);
+
+  // Straight into the copy: the reason to duplicate a guide is to trim it down into a shorter one,
+  // and that work happens in the copy, not the original.
+  const handleDuplicate = async (guideId: string) => {
+    if (duplicating) return;
+    setDuplicating(true);
+    try {
+      const copyId = await duplicateGuide(guideId);
+      if (copyId) {
+        navigate({ page: 'guide', guideId: copyId });
+        // Hold the button disabled across the navigation. Copying takes a few milliseconds, so an
+        // in-flight guard alone is no guard at all: the button keeps its place while the page under
+        // it becomes the copy, and a second click of a fast double-click lands on the copy and forks
+        // *it*, chaining "Copy of Copy of…" for as long as the user keeps clicking.
+        settleTimer.current = setTimeout(() => setDuplicating(false), DUPLICATE_SETTLE_MS);
+        return;
+      }
+    } catch (err) {
+      logger.error(' Duplicate guide failed', err);
+    }
+    setDuplicating(false);
+  };
 
   const toggleEditing = (guideId: string) => {
     if (editing) {
@@ -169,10 +200,22 @@ export default function TopNav({ route }: TopNavProps) {
               </Button>
             )}
             {!editing && (
-              <Button size="sm" onClick={() => setExportOpen(true)} className="h-8 rounded-lg">
-                <Download size={14} />
-                {i18n.t('common.export')}
-              </Button>
+              <>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={duplicating}
+                  onClick={() => handleDuplicate(exportData.guideId)}
+                  className={NAV_CONTROL}
+                >
+                  <Copy size={14} />
+                  {i18n.t('library.duplicate')}
+                </Button>
+                <Button size="sm" onClick={() => setExportOpen(true)} className="h-8 rounded-lg">
+                  <Download size={14} />
+                  {i18n.t('common.export')}
+                </Button>
+              </>
             )}
             <ExportPreviewModal
               open={exportOpen}
