@@ -242,6 +242,7 @@ editor:
   rewriteErrorNoApiKey: "Ajoutez une cl\xE9 d'API d'IA dans les r\xE9glages pour r\xE9\xE9crire du texte."
   rewriteErrorFailed: "Impossible de r\xE9\xE9crire la s\xE9lection. R\xE9essayez."
   rewriteErrorStale: "Le texte a chang\xE9. S\xE9lectionnez-le \xE0 nouveau."
+  restoreSpoken: Restaurer ce que vous avez dit
 
 capture:
   recordSteps: "Enregistrer des étapes"
@@ -617,3 +618,19 @@ import:
   errorVersion: "Ce fichier a été créé avec une version plus récente de Mimik. Mettez Mimik à jour, puis réessayez."
   errorEmpty: "Ce fichier ne contient aucune étape."
   errorFailed: "Le guide n’a pas pu être enregistré dans votre bibliothèque. Réessayez de l’importer."
+transcript:
+  title: Transcription
+  empty: Rien n’a été dit dans cet enregistrement.
+  loadError: Impossible de charger la transcription. Réessayez.
+  filterAll: "Tout ($1)"
+  filterUnused: "Non utilisé ($1)"
+  privacyNote: Tout ce que vous avez dit pendant l’enregistrement, conservé sur cet appareil uniquement. Il ne fait jamais partie d’un guide exporté et est supprimé avec le guide.
+  usedInStep: "Étape $1"
+  readOnlyHint: Active Modifier dans la barre du haut pour ajouter ces lignes à une étape.
+  notUsed: Non utilisé
+  filteredOut: Filtré
+  addToStep: "Ajouter à l’étape $1"
+  copyAll: Tout copier
+  download: Télécharger
+  delete: Supprimer la transcription
+  confirmDelete: Supprimer cette transcription ? Ce que vous avez dit sera perdu définitivement.

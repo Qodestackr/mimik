@@ -242,6 +242,7 @@ editor:
   rewriteErrorNoApiKey: Add an AI API key in settings to rewrite text.
   rewriteErrorFailed: Could not rewrite the selection. Try again.
   rewriteErrorStale: The text changed. Select it again.
+  restoreSpoken: Restore what you said
 
 capture:
   recordSteps: Record steps
@@ -617,3 +618,19 @@ import:
   errorVersion: "This file was made with a newer Mimik. Update Mimik, then try again."
   errorEmpty: "This file has no steps in it."
   errorFailed: "The guide couldn't be saved to your library. Try importing it again."
+transcript:
+  title: Transcript
+  empty: Nothing was narrated in this recording.
+  loadError: Unable to load the transcript. Try again.
+  filterAll: "All ($1)"
+  filterUnused: "Unused ($1)"
+  privacyNote: Everything you said while recording, kept on this device only. It is never part of an exported guide and is deleted with the guide.
+  usedInStep: "Step $1"
+  readOnlyHint: Turn on Edit in the top bar to add these lines to a step.
+  notUsed: Unused
+  filteredOut: Filtered out
+  addToStep: "Add to step $1"
+  copyAll: Copy all
+  download: Download
+  delete: Delete transcript
+  confirmDelete: Delete this transcript? What you said will be gone for good.
