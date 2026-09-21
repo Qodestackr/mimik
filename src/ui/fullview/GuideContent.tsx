@@ -8,6 +8,7 @@ import {
   deleteStep,
   getGuide,
   getScreenshotsForSteps,
+  hasTranscript,
   onGuidesChanged,
   updateGuideDescription,
   updateGuideTitle,
@@ -28,6 +29,7 @@ import FaviconImg from '@/ui/shared/FaviconImg';
 import { guideDescriptionErrorMessage } from '@/ui/shared/guide-description-error';
 import Toast from '@/ui/shared/Toast';
 import GuideStepList from './components/GuideStepList';
+import TranscriptPanel from './components/TranscriptPanel';
 import VersionHistoryPanel from './components/VersionHistoryPanel';
 
 interface GuideContentProps {
@@ -74,6 +76,9 @@ export default function GuideContent({ guideId, initialStepId, initialTool }: Gu
     historyOpen,
     setHistoryOpen,
     historyRefreshKey,
+    transcriptOpen,
+    setTranscriptOpen,
+    setHasTranscript,
   } = useFullview((s) => ({
     setGuideTitle: s.setGuideTitle,
     setGuideStepCount: s.setGuideStepCount,
@@ -84,6 +89,9 @@ export default function GuideContent({ guideId, initialStepId, initialTool }: Gu
     historyOpen: s.historyOpen,
     setHistoryOpen: s.setHistoryOpen,
     historyRefreshKey: s.historyRefreshKey,
+    transcriptOpen: s.transcriptOpen,
+    setTranscriptOpen: s.setTranscriptOpen,
+    setHasTranscript: s.setHasTranscript,
   }));
 
   const [data, setData] = useState<GuideData | null>(null);
@@ -98,6 +106,7 @@ export default function GuideContent({ guideId, initialStepId, initialTool }: Gu
   const [generating, setGenerating] = useState(false);
   const [hasApiKey, setHasApiKey] = useState(false);
   const [descriptionError, setDescriptionError] = useState<string | null>(null);
+  const [dataVersion, setDataVersion] = useState(0);
   const titleRef = useRef('');
   const appliedInitialRef = useRef(false);
   const editingDescriptionRef = useRef(false);
@@ -123,8 +132,12 @@ export default function GuideContent({ guideId, initialStepId, initialTool }: Gu
       setGuideTitle(newTitle);
       setGuideStepCount(actionSteps(result.steps).length);
     }
+    hasTranscript(guideId)
+      .then(setHasTranscript)
+      .catch((err) => logger.error(' Transcript lookup failed', err));
+    setDataVersion((version) => version + 1);
     setLoading(false);
-  }, [guideId, setGuideTitle, setGuideStepCount]);
+  }, [guideId, setGuideTitle, setGuideStepCount, setHasTranscript]);
 
   useEffect(() => {
     loadGuide();
@@ -290,6 +303,7 @@ export default function GuideContent({ guideId, initialStepId, initialTool }: Gu
     );
   if (!data) return <p className="text-sm py-12 text-center text-purple">{i18n.t('fullview_guideNotFound')}</p>;
 
+  const sidePanelOpen = historyOpen || transcriptOpen;
   const previewView = preview && previewData?.snapshotId === preview.id ? previewData : null;
   const viewSteps = previewView ? previewView.steps : data.steps;
   const viewScreenshots = previewView ? previewView.screenshots : data.screenshots;
@@ -312,8 +326,8 @@ export default function GuideContent({ guideId, initialStepId, initialTool }: Gu
         />
       )}
 
-      <div className={historyOpen ? 'flex items-start gap-6' : ''}>
-        <div className={historyOpen ? 'flex-1 min-w-0' : ''}>
+      <div className={sidePanelOpen ? 'flex items-start gap-6' : ''}>
+        <div className={sidePanelOpen ? 'flex-1 min-w-0' : ''}>
           {preview && (
             <div className="flex items-center gap-2 rounded-lg bg-secondary border border-border px-4 py-3 mb-4">
               <History size={15} className="text-accent shrink-0" />
@@ -493,6 +507,18 @@ export default function GuideContent({ guideId, initialStepId, initialTool }: Gu
             }}
           />
         </div>
+
+        {transcriptOpen && (
+          <TranscriptPanel
+            guideId={guideId}
+            guideTitle={data.guide.title}
+            steps={data.steps}
+            readOnly={!editing || preview !== null}
+            refreshKey={dataVersion}
+            onClose={() => setTranscriptOpen(false)}
+            onChanged={loadGuide}
+          />
+        )}
 
         {historyOpen && (
           <VersionHistoryPanel

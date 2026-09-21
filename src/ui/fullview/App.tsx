@@ -11,9 +11,10 @@ import TopNav from './TopNav';
 
 export default function FullViewApp() {
   const route = useRoute();
-  const { toggleSearch, historyOpen } = useFullview((s) => ({
+  const { toggleSearch, historyOpen, transcriptOpen } = useFullview((s) => ({
     toggleSearch: s.toggleSearch,
     historyOpen: s.historyOpen,
+    transcriptOpen: s.transcriptOpen,
   }));
 
   useEffect(() => {
@@ -42,7 +43,7 @@ export default function FullViewApp() {
 
         {route.page === 'guide' && (
           <main className="flex-1 py-10 px-6">
-            <div className={`mx-auto ${historyOpen ? 'max-w-[1032px]' : 'max-w-[720px]'}`}>
+            <div className={`mx-auto ${historyOpen || transcriptOpen ? 'max-w-[1032px]' : 'max-w-[720px]'}`}>
               <GuideContent guideId={route.guideId} initialStepId={route.stepId} initialTool={route.tool} />
             </div>
           </main>
