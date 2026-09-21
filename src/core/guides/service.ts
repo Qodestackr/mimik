@@ -211,6 +211,69 @@ export async function createStep(step: Step): Promise<void> {
   await db.steps.add(step);
 }
 
+/**
+ * Copies a guide into a new, independent one — the long recording a user then trims down into
+ * several shorter guides. Steps and screenshot rows are copied outright under fresh ids, so the
+ * copy shares nothing that can be edited: {@link updateScreenshotEdits} writes a row in place, and
+ * a shared row would mean annotating one guide silently annotated the other.
+ *
+ * Snapshots are deliberately not carried over — the copy's original is the moment it was made, and
+ * a snapshot's screenshot rows point at ids that only exist in the source. Transcripts are not
+ * carried over either: their lines key to step ids that all changed here, and a verbatim transcript
+ * is the most sensitive thing stored, so it stays with the one guide the user recorded it on. The
+ * spoken text itself survives per step in `narratedDescription`, so "restore what I said" still
+ * works in the copy.
+ */
+export async function duplicateGuide(guideId: string): Promise<string | null> {
+  const copyId = await db.transaction('rw', db.guides, db.steps, db.screenshots, async () => {
+    const guide = await db.guides.get(guideId);
+    if (!guide) return null;
+    const steps = await db.steps.where('guideId').equals(guideId).sortBy('index');
+    // By id, not by stepId: replaceScreenshot leaves the superseded rows behind for version history
+    // to revert to, and the copy has no history that could ever reach them.
+    const screenshots = await db.screenshots
+      .where('id')
+      .anyOf(steps.map((s) => s.screenshotId).filter((id): id is string => !!id))
+      .toArray();
+
+    const newGuideId = crypto.randomUUID();
+    const stepIdMap = new Map(steps.map((step) => [step.id, crypto.randomUUID()]));
+    const screenshotIdMap = new Map(screenshots.map((row) => [row.id, crypto.randomUUID()]));
+    const now = Date.now();
+
+    const { staging: _staging, ...rest } = guide;
+    await db.guides.add({
+      ...rest,
+      id: newGuideId,
+      title: i18n.t('library.copyOfTitle', [guide.title]),
+      createdAt: now,
+      updatedAt: now,
+      stepIds: steps.map((step) => stepIdMap.get(step.id)!),
+      starred: false,
+      deletedAt: null,
+    });
+    await db.steps.bulkAdd(
+      steps.map((step, index) => ({
+        ...step,
+        id: stepIdMap.get(step.id)!,
+        guideId: newGuideId,
+        index,
+        screenshotId: step.screenshotId ? screenshotIdMap.get(step.screenshotId) : undefined,
+      })),
+    );
+    await db.screenshots.bulkAdd(
+      screenshots.map((row) => ({
+        ...row,
+        id: screenshotIdMap.get(row.id)!,
+        stepId: stepIdMap.get(row.stepId)!,
+      })),
+    );
+    return newGuideId;
+  });
+  if (copyId) notifyGuidesChanged({ type: 'mutated' });
+  return copyId;
+}
+
 export async function mergeGuideInto(sourceGuideId: string, targetGuideId: string, atIndex: number): Promise<number> {
   const moved = await db.transaction('rw', db.steps, db.guides, db.transcripts, db.guideMerges, async () => {
     const incoming = await db.steps.where('guideId').equals(sourceGuideId).sortBy('index');
