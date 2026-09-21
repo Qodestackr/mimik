@@ -133,8 +133,8 @@ describe('ExportPreviewModal document preview', () => {
 });
 
 describe('ExportPreviewModal voice-over controls', () => {
-  const voiceoverToggle = () => screen.queryByRole('button', { name: 'exportPreview.voiceover' });
-  const lengthNote = () => screen.queryByText(/exportPreview\.videoLength/);
+  const silent = () => screen.queryByRole('button', { name: 'exportPreview.audioSilent' });
+  const narrated = () => screen.queryByRole('button', { name: /exportPreview\.audioNarrated/ });
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -150,7 +150,7 @@ describe('ExportPreviewModal voice-over controls', () => {
     renderModal(3);
 
     await waitFor(() => expect(exportGuideAsHTML).toHaveBeenCalled());
-    expect(voiceoverToggle()).not.toBeNull();
+    expect(narrated()).not.toBeNull();
   });
 
   it('is offered on the video tab', async () => {
@@ -158,7 +158,7 @@ describe('ExportPreviewModal voice-over controls', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'exportPreview.modeVideo' }));
 
-    await waitFor(() => expect(voiceoverToggle()).not.toBeNull());
+    await waitFor(() => expect(narrated()).not.toBeNull());
   });
 
   it('is absent entirely when this browser cannot encode video', async () => {
@@ -166,25 +166,28 @@ describe('ExportPreviewModal voice-over controls', () => {
     renderModal(3);
 
     await waitFor(() => expect(exportGuideAsHTML).toHaveBeenCalled());
-    expect(voiceoverToggle()).toBeNull();
+    expect(narrated()).toBeNull();
   });
 
-  it('holds the length estimate back until voice-over is switched on', async () => {
+  it('starts silent and marks the chosen side', async () => {
     renderModal(3);
 
-    await waitFor(() => expect(voiceoverToggle()).not.toBeNull());
-    expect(lengthNote()).toBeNull();
+    await waitFor(() => expect(silent()).not.toBeNull());
+    expect(silent()?.getAttribute('aria-pressed')).toBe('true');
+    expect(narrated()?.getAttribute('aria-pressed')).toBe('false');
 
-    fireEvent.click(voiceoverToggle() as HTMLElement);
-    await waitFor(() => expect(lengthNote()).not.toBeNull());
+    fireEvent.click(narrated() as HTMLElement);
+
+    await waitFor(() => expect(narrated()?.getAttribute('aria-pressed')).toBe('true'));
+    expect(silent()?.getAttribute('aria-pressed')).toBe('false');
   });
 
-  it('cannot be switched on without a key', async () => {
+  it('cannot be narrated without a key', async () => {
     stored.value = {};
     renderModal(3);
 
-    await waitFor(() => expect(voiceoverToggle()).not.toBeNull());
-    expect((voiceoverToggle() as HTMLButtonElement).disabled).toBe(true);
-    expect(lengthNote()).toBeNull();
+    await waitFor(() => expect(narrated()).not.toBeNull());
+    expect((narrated() as HTMLButtonElement).disabled).toBe(true);
+    expect((silent() as HTMLButtonElement).disabled).toBe(false);
   });
 });

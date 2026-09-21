@@ -316,6 +316,9 @@ blurPanel:
 exportPreview:
   voiceover: "Voiceover"
   voiceoverHint: "Liest jeden Schritt vor. Ein Schritt bleibt stehen, bis die Stimme endet."
+  audio: "Audio"
+  audioSilent: "Stumm"
+  audioNarrated: "Vertont"
   voiceoverNoKey: "Hinterlege in den Einstellungen einen OpenAI- oder ElevenLabs-Schlüssel, um Videos zu vertonen."
   videoLength: "Videolänge $1"
   videoLengthVoice: "Videolänge $1 → $2 mit Voiceover"

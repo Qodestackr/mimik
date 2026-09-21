@@ -385,6 +385,9 @@ annotationEditor:
 exportPreview:
   voiceover: "配音"
   voiceoverHint: "朗读每个步骤，画面会保持到语音结束。"
+  audio: "音频"
+  audioSilent: "静音"
+  audioNarrated: "配音"
   voiceoverNoKey: "在设置中添加 OpenAI 或 ElevenLabs 密钥即可为视频配音。"
   videoLength: "视频时长 $1"
   videoLengthVoice: "视频时长 $1 → $2（含配音）"

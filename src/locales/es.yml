@@ -385,6 +385,9 @@ annotationEditor:
 exportPreview:
   voiceover: "Voz en off"
   voiceoverHint: "Lee cada paso en voz alta. Cada paso se mantiene hasta que termina la voz."
+  audio: "Audio"
+  audioSilent: "Silencioso"
+  audioNarrated: "Narrado"
   voiceoverNoKey: "Añade una clave de OpenAI o ElevenLabs en Ajustes para narrar los vídeos."
   videoLength: "Duración del vídeo $1"
   videoLengthVoice: "Duración del vídeo $1 → $2 con voz en off"

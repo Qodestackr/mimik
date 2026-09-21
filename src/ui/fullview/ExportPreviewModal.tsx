@@ -1,4 +1,4 @@
-import { FileCode, FileDown, FileImage, FileText, Loader2, Package, TriangleAlert, Video } from 'lucide-react';
+import { FileCode, FileDown, FileImage, FileText, Loader2, Package, TriangleAlert, Video, Volume2 } from 'lucide-react';
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { i18n } from '#imports';
 import { downloadBlob, downloadText, safeFilename } from '@/core/export/download';
@@ -16,10 +16,8 @@ import {
 import { exportGuideAsPDF } from '@/core/export/pdf-export';
 import { paginatePreview, withPreviewStyles } from '@/core/export/preview';
 import type { VideoChapter } from '@/core/export/video-export';
-import { COVER_SECONDS, canExportVideo, STEP_SECONDS, videoSeconds } from '@/core/export/video-support';
+import { COVER_SECONDS, canExportVideo, STEP_SECONDS } from '@/core/export/video-support';
 import { hasVoiceoverKey, VOICEOVER_SETTINGS } from '@/core/export/voiceover/config';
-import { voiceoverScript } from '@/core/export/voiceover/script';
-import { isBlock } from '@/core/guides/blocks';
 import type { Guide, Screenshot, Step } from '@/core/guides/types';
 import { BUNDLE_EXTENSION } from '@/core/transfer/schema';
 import { localStorage } from '@/lib/browser-api';
@@ -30,10 +28,6 @@ const VideoStepPlayer = lazy(() => import('@/ui/fullview/VideoStepPlayer'));
 
 const VIDEO_AUTOPLAY_STEP_LIMIT = 25;
 
-function clock(seconds: number): string {
-  const whole = Math.round(seconds);
-  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`;
-}
 const IMAGE_SCALES: ImageScale[] = ['small', 'medium', 'large'];
 
 interface ExportPreviewModalProps {
@@ -64,7 +58,7 @@ export default function ExportPreviewModal({ open, onOpenChange, guide, steps, s
   const [videoRequested, setVideoRequested] = useState(false);
   const [voiceoverReady, setVoiceoverReady] = useState(false);
   const [voiceProgress, setVoiceProgress] = useState<{ done: number; total: number } | null>(null);
-  const [narratedSeconds, setNarratedSeconds] = useState<number | null>(null);
+  const [, setNarratedSeconds] = useState<number | null>(null);
   const [voiceoverError, setVoiceoverError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -96,10 +90,6 @@ export default function ExportPreviewModal({ open, onOpenChange, guide, steps, s
   const typedStepCount = steps.filter((step) => step.inputValue && screenshots.has(step.id)).length;
   const { cover, stepDescriptions, resolution, screenshots: withScreenshots, stepUrls, imageScale } = options;
   const voiceover = options.voiceover && voiceoverReady;
-  const frames = steps.filter((step) => isBlock(step) || screenshots.has(step.id));
-  const baseSeconds = videoSeconds(frames.length, cover);
-  const narration = voiceoverScript(guide, frames, cover);
-  const narratedChars = narration.reduce((total, segment) => total + segment.text.length, 0);
 
   const previewOptions = useMemo<ExportOptions>(
     () => ({ ...DEFAULT_EXPORT_OPTIONS, cover, screenshots: withScreenshots, stepUrls, imageScale, stepDescriptions }),
@@ -355,49 +345,48 @@ export default function ExportPreviewModal({ open, onOpenChange, guide, steps, s
 
             {videoSupported && (
               <div className="pt-3 border-t border-border">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="text-[12px] font-semibold text-foreground">{i18n.t('exportPreview.voiceover')}</div>
-                    <div className="text-[10px] text-muted-foreground leading-snug">
-                      {voiceoverReady ? i18n.t('exportPreview.voiceoverHint') : i18n.t('exportPreview.voiceoverNoKey')}
-                    </div>
-                  </div>
+                <div className="text-[12px] font-semibold text-foreground mb-2">{i18n.t('exportPreview.audio')}</div>
+                <div className="flex gap-1.5">
                   <button
                     type="button"
-                    aria-label={i18n.t('exportPreview.voiceover')}
-                    aria-pressed={voiceover}
-                    disabled={!voiceoverReady}
-                    onClick={() => update({ voiceover: !options.voiceover })}
-                    className={`w-9 h-5 rounded-full transition-colors relative shrink-0 mt-0.5 disabled:opacity-45 disabled:cursor-not-allowed ${
-                      voiceover ? 'bg-accent' : 'bg-border'
+                    aria-pressed={!voiceover}
+                    onClick={() => update({ voiceover: false })}
+                    className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg border text-[11px] leading-none transition-colors ${
+                      voiceover
+                        ? 'border-border text-muted-foreground hover:border-accent hover:text-foreground'
+                        : 'border-accent text-accent'
                     }`}
                   >
-                    <span
-                      className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform ${
-                        voiceover ? 'translate-x-4' : 'translate-x-0'
-                      }`}
-                    />
+                    <span className="leading-none">{i18n.t('exportPreview.audioSilent')}</span>
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={voiceover}
+                    disabled={!voiceoverReady}
+                    onClick={() => update({ voiceover: true })}
+                    className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg border text-[11px] leading-none transition-colors disabled:opacity-45 disabled:cursor-not-allowed disabled:hover:border-border disabled:hover:text-muted-foreground ${
+                      voiceover
+                        ? 'border-accent text-accent'
+                        : 'border-border text-muted-foreground hover:border-accent hover:text-foreground'
+                    }`}
+                  >
+                    <span className="leading-none">{i18n.t('exportPreview.audioNarrated')}</span>
+                    <Volume2 size={11} className="shrink-0 block" />
                   </button>
                 </div>
 
-                {voiceover && (
-                  <div className="mt-2.5 space-y-1.5">
-                    <div className="rounded-lg bg-secondary px-2.5 py-2 text-[11px] text-foreground" role="status">
-                      {narratedSeconds === null
-                        ? i18n.t('exportPreview.videoLength', [clock(baseSeconds)])
-                        : i18n.t('exportPreview.videoLengthVoice', [clock(baseSeconds), clock(narratedSeconds)])}
-                    </div>
-                    <div className="px-0.5 text-[10px] text-muted-foreground leading-snug">
-                      {i18n.t('exportPreview.voiceoverCost', [String(narration.length), String(narratedChars)])}
-                    </div>
-                    {voiceoverError && (
-                      <div
-                        className="rounded-lg px-2.5 py-2 text-[10px] leading-snug text-destructive bg-destructive/10"
-                        role="alert"
-                      >
-                        {i18n.t('exportPreview.voiceoverFailed')}
-                      </div>
-                    )}
+                {!voiceoverReady && (
+                  <div className="mt-1.5 px-0.5 text-[10px] text-muted-foreground leading-snug">
+                    {i18n.t('exportPreview.voiceoverNoKey')}
+                  </div>
+                )}
+
+                {voiceover && voiceoverError && (
+                  <div
+                    className="mt-1.5 rounded-lg px-2.5 py-2 text-[10px] leading-snug text-destructive bg-destructive/10"
+                    role="alert"
+                  >
+                    {i18n.t('exportPreview.voiceoverFailed')}
                   </div>
                 )}
               </div>
