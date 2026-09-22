@@ -693,6 +693,7 @@ export type FrameOptions = Pick<ExportOptions, 'cover' | 'stepDescriptions'> & {
 export interface VideoExportControls {
   onProgress?: (done: number, total: number) => void;
   onVoiceProgress?: (done: number, total: number) => void;
+  onMuxProgress?: (done: number, total: number) => void;
   signal?: AbortSignal;
 }
 
@@ -716,11 +717,6 @@ export function stepKind(step: Step): StepKind {
   return 'click';
 }
 
-/**
- * Why narration did not make it into the video. `failed` carries the thrown message in `detail`;
- * the other three are the deliberate skips, which used to return silently and leave the export
- * panel reporting a narrated video that had no audio in it.
- */
 export type VoiceoverSkipReason = 'failed' | 'noAudioCodec' | 'noKey' | 'nothingToSay';
 
 export interface VoiceoverSkip {
@@ -919,8 +915,6 @@ async function prepareVoiceover(
 
   const config = resolveVoiceoverConfig(await localStorage.get([...VOICEOVER_SETTINGS]));
   if (!config.apiKey) {
-    // logger.warn is compiled out of a built extension, so every skip logs at error level: a
-    // silent skip that neither reaches the UI nor the console is undebuggable.
     logger.error('[voiceover] skipped: no', voiceoverProvider(config.provider).label, 'API key');
     return { voice: null, error: { reason: 'noKey' } };
   }
@@ -998,8 +992,6 @@ export async function exportGuideAsVideo(
   if (containers.length === 0) throw new Error('This browser cannot encode video');
   const spec = RESOLUTION_SPECS[resolution];
 
-  // Narration runs first because it also settles the container: a browser that encodes H.264 but
-  // not AAC has to fall back to WebM/Opus rather than mp4, which it could not write audio into.
   const narration: NarrationOutcome | { voice: null; error?: undefined } = options.voiceover
     ? await narrateOrSkip(guide, frames, Boolean(options.cover), containers, controls)
     : { voice: null };
@@ -1050,8 +1042,12 @@ export async function exportGuideAsVideo(
       const spans = stepSpans(timeline, frames.length);
       const offset = options.cover ? timeline.coverSeconds : 0;
       const total = offset + spannedFrames(spans) / FPS + (options.cover ? COVER_SECONDS : 0);
-      await writeVoiceTrack(voiceoverPlacement(voice.clips, stepStarts(spans), offset), total, (buffer) =>
-        audio.add(buffer),
+      await writeVoiceTrack(
+        voiceoverPlacement(voice.clips, stepStarts(spans), offset),
+        total,
+        (buffer) => audio.add(buffer),
+        undefined,
+        controls.onMuxProgress,
       );
     }
 

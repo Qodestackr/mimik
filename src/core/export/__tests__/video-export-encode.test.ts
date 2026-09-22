@@ -603,8 +603,7 @@ describe('exportGuideAsVideo voiceover', () => {
     expect(result.voiceoverError).toBeUndefined();
   });
 
-  it('prefers the container whose audio codec this browser can encode', async () => {
-    // Chromium on Linux: H.264 and VP9 both encode, but AAC does not.
+  it('prefers the container whose audio codec this browser can encode, as on Chromium for Linux', async () => {
     rec.containers = ['mp4', 'webm'];
     voice.codecs = ['opus'];
     voice.clips = new Map([[0, clip(2)]]);
