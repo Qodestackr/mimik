@@ -1,5 +1,5 @@
 import Dexie, { type EntityTable } from 'dexie';
-import type { Guide, GuideTranscript, Screenshot, Snapshot, Step, VoiceClip } from './types';
+import type { Guide, GuideMerge, GuideTranscript, Screenshot, Snapshot, Step, VoiceClip } from './types';
 
 export class MimikDB extends Dexie {
   guides!: EntityTable<Guide, 'id'>;
@@ -8,6 +8,7 @@ export class MimikDB extends Dexie {
   snapshots!: EntityTable<Snapshot, 'id'>;
   voiceClips!: EntityTable<VoiceClip, 'id'>;
   transcripts!: EntityTable<GuideTranscript, 'id'>;
+  guideMerges!: EntityTable<GuideMerge, 'id'>;
 
   constructor() {
     super('mimik');
@@ -24,6 +25,9 @@ export class MimikDB extends Dexie {
     });
     this.version(4).stores({
       transcripts: 'id, guideId, [guideId+epochMs]',
+    });
+    this.version(5).stores({
+      guideMerges: 'id, targetGuideId, mergedAt',
     });
   }
 }

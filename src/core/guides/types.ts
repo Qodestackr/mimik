@@ -122,6 +122,12 @@ export interface GuideTranscript {
   lines: TranscriptLine[];
 }
 
+export interface GuideMerge {
+  id: string;
+  targetGuideId: string;
+  mergedAt: number;
+}
+
 export interface VoiceClip {
   id: string;
   bytes: ArrayBuffer;
