@@ -68,9 +68,13 @@ export async function writeVoiceTrack(
   totalSec: number,
   add: (buffer: AudioBuffer) => Promise<void>,
   sampleRate = VOICE_SAMPLE_RATE,
+  onProgress?: (done: number, total: number) => void,
 ): Promise<void> {
-  for (const piece of voiceTrackPieces(clips, totalSec, sampleRate)) {
+  const pieces = voiceTrackPieces(clips, totalSec, sampleRate);
+  let written = 0;
+  for (const piece of pieces) {
     await add(piece.kind === 'clip' ? piece.buffer : silence(piece.samples, sampleRate));
+    onProgress?.(++written, pieces.length);
   }
 }
 
@@ -80,11 +84,6 @@ export async function pickVoiceCodec(container: VideoContainer): Promise<VoiceCo
   return (await canEncodeAudio(codec, { numberOfChannels: 1, sampleRate: VOICE_SAMPLE_RATE })) ? codec : null;
 }
 
-/**
- * Picks the first container this browser can encode *audio* into. Video support alone is not
- * enough: Chromium on Linux encodes H.264 but not AAC, so preferring mp4 there lands the export in
- * a container it cannot write the voice track into, while WebM/Opus would have worked.
- */
 export async function pickVoiceContainer(
   containers: VideoContainer[],
 ): Promise<{ container: VideoContainer; codec: VoiceCodec } | null> {

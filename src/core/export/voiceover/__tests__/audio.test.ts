@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { type PlacedClip, voiceTrackPieces } from '@/core/export/voiceover/audio';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { type PlacedClip, voiceTrackPieces, writeVoiceTrack } from '@/core/export/voiceover/audio';
 
 const RATE = 100;
 
@@ -40,5 +40,55 @@ describe('voiceTrackPieces', () => {
       'clip:10',
       'gap:90',
     ]);
+  });
+});
+
+describe('writeVoiceTrack', () => {
+  beforeEach(() => {
+    vi.stubGlobal(
+      'OfflineAudioContext',
+      class {
+        createBuffer(_channels: number, length: number) {
+          return { length };
+        }
+      },
+    );
+  });
+
+  it('reports a step per piece, so the bar can move while the track is written', async () => {
+    const seen: [number, number][] = [];
+    await writeVoiceTrack(
+      [clip(1, 50)],
+      3,
+      async () => {},
+      RATE,
+      (done, total) => seen.push([done, total]),
+    );
+
+    expect(seen).toEqual([
+      [1, 3],
+      [2, 3],
+      [3, 3],
+    ]);
+  });
+
+  it('ends on a full count, so the bar lands on 100%', async () => {
+    const seen: [number, number][] = [];
+    await writeVoiceTrack(
+      [],
+      2,
+      async () => {},
+      RATE,
+      (done, total) => seen.push([done, total]),
+    );
+
+    expect(seen.at(-1)?.[0]).toBe(seen.at(-1)?.[1]);
+  });
+
+  it('writes the track without a progress callback at all', async () => {
+    const written: number[] = [];
+    await writeVoiceTrack([clip(1, 50)], 3, async (b) => void written.push(b.length), RATE);
+
+    expect(written).toEqual([100, 50, 150]);
   });
 });
