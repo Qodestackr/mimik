@@ -242,17 +242,28 @@ need no special case. `voiceTrackPieces` measures each gap from an absolute samp
 rounding cannot drift over a long guide, and a clip that overruns its slot pushes the rest later
 instead of being cut.
 
+The container is settled by narration, not before it. `availableContainers` returns *every*
+container this browser can encode video into, in preference order, and `prepareVoiceover` walks that
+list with `pickVoiceContainer` to find the first whose audio codec also encodes. Video support alone
+is not enough: Chromium on Linux encodes H.264 but not AAC, so picking mp4 on video support would
+land the export in a container it cannot write the voice track into although WebM/Opus was sitting
+right there. A silent export still takes `containers[0]`, since nothing there depends on audio.
+
 Narration never fails an export. No key, no AAC/Opus encoder, nothing to say, or the API itself
-refusing — all log and fall back to a silent video on the structural timeline, so the stretched
-timeline only ever exists when a track was actually produced. The failure is reported back on
-`VideoExportResult.voiceoverError` and the export panel says the video came out silent, because
-dropping paid-for narration without telling anyone is worse than the error. A user abort is the one
-thing `narrateOrSkip` rethrows — cancelling an export must still cancel it.
+refusing — all fall back to a silent video on the structural timeline, so the stretched timeline only
+ever exists when a track was actually produced. Every one of those four reports itself on
+`VideoExportResult.voiceoverError` as a `VoiceoverSkip` — a `reason` the panel turns into a message,
+plus the thrown `detail` for `failed` — because a skip that returns `{voice: null}` with no error
+leaves the panel rendering a narrated length for a video with no audio in it, which is a lie. They
+log at `error` level rather than `warn` for the same reason: `logger.warn` is compiled out of a built
+extension, so a `warn`-only skip is invisible in the one build where a user could hit it. A user
+abort is the one thing `narrateOrSkip` rethrows — cancelling an export must still cancel it.
 
 Only the dashboard's export panel can turn narration on. `ExportMenu` in the side panel passes
 `voiceover: false` explicitly rather than inheriting the saved option, because that surface has no
 toggle and no indicator: a stored preference must not spend money somewhere the user cannot see or
-stop it. A rejected key's response body is never repeated into the error, since OpenAI echoes part of
+stop it. (That component is currently unmounted — nothing in `src/` imports it — so the guard is
+there for whenever it comes back, not for a live surface.) A rejected key's response body is never repeated into the error, since OpenAI echoes part of
 the key back in its 401. Clips are cached in Dexie (`voiceClips`, keyed by provider
 + voice + model + text hash, 500 most recent; the row type lives in `core/guides/types.ts` with the
 rest of the schema) because the preview re-encodes on every option change
