@@ -3,12 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { i18n } from '#imports';
 import { downloadText, safeFilename } from '@/core/export/download';
 import { stepNumbers } from '@/core/guides/blocks';
-import {
-  appendToStepDescription,
-  attachTranscriptLine,
-  deleteTranscripts,
-  getTranscripts,
-} from '@/core/guides/service';
+import { addTranscriptLineToStep, deleteTranscripts, getTranscripts } from '@/core/guides/service';
 import {
   countUnused,
   formatOffset,
@@ -115,8 +110,7 @@ export default function TranscriptPanel({
   const handleAddToStep = async (line: TimelineLine, index: number) => {
     const targetId = targetFor(line, index);
     if (!targetId) return;
-    if (!(await appendToStepDescription(targetId, line.text))) return;
-    await attachTranscriptLine(line.rowId, line.lineIndex, targetId);
+    if (!(await addTranscriptLineToStep(line.rowId, line.lineIndex, targetId, line.text))) return;
     await load();
     onChanged?.();
   };

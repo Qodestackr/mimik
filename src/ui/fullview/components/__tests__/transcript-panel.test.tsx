@@ -5,14 +5,12 @@ import type { GuideTranscript, Step } from '@/core/guides/types';
 import { TooltipProvider } from '@/ui/components/ui/tooltip';
 
 const getTranscripts = vi.fn();
-const appendToStepDescription = vi.fn();
-const attachTranscriptLine = vi.fn();
+const addTranscriptLineToStep = vi.fn();
 const deleteTranscripts = vi.fn();
 
 vi.mock('@/core/guides/service', () => ({
   getTranscripts: (...args: unknown[]) => getTranscripts(...args),
-  appendToStepDescription: (...args: unknown[]) => appendToStepDescription(...args),
-  attachTranscriptLine: (...args: unknown[]) => attachTranscriptLine(...args),
+  addTranscriptLineToStep: (...args: unknown[]) => addTranscriptLineToStep(...args),
   deleteTranscripts: (...args: unknown[]) => deleteTranscripts(...args),
 }));
 
@@ -66,8 +64,7 @@ function renderPanel(rows: GuideTranscript[], steps: Step[], readOnly = false) {
 
 beforeEach(() => {
   getTranscripts.mockReset();
-  appendToStepDescription.mockReset();
-  attachTranscriptLine.mockReset().mockResolvedValue(undefined);
+  addTranscriptLineToStep.mockReset();
   deleteTranscripts.mockReset();
 });
 
@@ -90,7 +87,7 @@ describe('TranscriptPanel', () => {
   });
 
   it('appends an unused line to the step that follows it', async () => {
-    appendToStepDescription.mockResolvedValue('Clicked something and then some');
+    addTranscriptLineToStep.mockResolvedValue('Clicked something and then some');
     renderPanel(
       [
         transcript([
@@ -104,11 +101,13 @@ describe('TranscriptPanel', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'transcript.addToStep[2]' }));
 
-    await waitFor(() => expect(appendToStepDescription).toHaveBeenCalledWith('s3', 'stray thought'));
+    await waitFor(() =>
+      expect(addTranscriptLineToStep).toHaveBeenCalledWith(expect.any(String), 1, 's3', 'stray thought'),
+    );
   });
 
   it('records the attribution, so reopening cannot append the same line twice', async () => {
-    appendToStepDescription.mockResolvedValue('Clicked something and then some');
+    addTranscriptLineToStep.mockResolvedValue('Clicked something and then some');
     const seeded = transcript([
       [1, 'click save', 's1', null],
       [3, 'stray thought', null, null],
@@ -134,9 +133,9 @@ describe('TranscriptPanel', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: 'transcript.addToStep[2]' }));
 
-    await waitFor(() => expect(attachTranscriptLine).toHaveBeenCalledWith(seeded.id, 1, 's3'));
+    await waitFor(() => expect(addTranscriptLineToStep).toHaveBeenCalledWith(seeded.id, 1, 's3', 'stray thought'));
     await waitFor(() => expect(screen.queryByRole('button', { name: /transcript.addToStep/ })).toBeNull());
-    expect(appendToStepDescription).toHaveBeenCalledTimes(1);
+    expect(addTranscriptLineToStep).toHaveBeenCalledTimes(1);
   });
 
   it('keeps a filtered line visible with its own tag', async () => {

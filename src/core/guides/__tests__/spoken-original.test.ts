@@ -18,9 +18,8 @@ vi.hoisted(() => {
 
 import { db } from '../db';
 import {
-  appendToStepDescription,
+  addTranscriptLineToStep,
   applyNarrationToSteps,
-  attachTranscriptLine,
   createSnapshot,
   deleteTranscripts,
   getTranscripts,
@@ -32,7 +31,23 @@ import {
   saveTranscript,
   updateStepDescription,
 } from '../service';
-import type { Step } from '../types';
+import type { ElementMeta, Step } from '../types';
+
+const BUTTON_META: ElementMeta = {
+  tag: 'button',
+  cssSelector: 'button.billing',
+  textContent: 'Billing',
+  ariaLabel: null,
+  placeholder: null,
+  altText: null,
+  name: null,
+  role: null,
+  href: null,
+  inputType: null,
+  dataTestId: null,
+  rect: { x: 0, y: 0, width: 80, height: 24 },
+  devicePixelRatio: 1,
+};
 
 const SPOKEN = 'Open the billing tab on the left';
 
@@ -68,6 +83,7 @@ afterEach(async () => {
   await db.transcripts.clear();
   await db.screenshots.clear();
   await db.snapshots.clear();
+  await db.guideMerges.clear();
 });
 
 describe('the spoken original', () => {
@@ -106,22 +122,49 @@ describe('the spoken original', () => {
   });
 });
 
-describe('appendToStepDescription', () => {
-  it('adds a recovered line to what the step already says', async () => {
-    expect(await appendToStepDescription('s1', 'then confirm the change')).toBe(
+describe('adding a transcript line to a step', () => {
+  const unused = {
+    epochMs: 1_700_000_000_000,
+    lines: [{ start: 4, end: 6, text: 'then confirm the change', stepId: null, rejectReason: null }],
+  };
+
+  async function seedRow(): Promise<string> {
+    await saveTranscript('g1', unused);
+    return (await getTranscripts('g1'))[0].id;
+  }
+
+  it('adds the line to what the step already says', async () => {
+    const rowId = await seedRow();
+    expect(await addTranscriptLineToStep(rowId, 0, 's1', 'then confirm the change')).toBe(
       'Clicked Billing then confirm the change',
     );
     expect((await db.steps.get('s1'))?.descriptionSource).toBe('manual');
   });
 
   it('becomes the whole description when the step had none', async () => {
+    const rowId = await seedRow();
     await db.steps.update('s1', { description: '' });
-    expect(await appendToStepDescription('s1', 'open the billing tab')).toBe('open the billing tab');
+    expect(await addTranscriptLineToStep(rowId, 0, 's1', 'open the billing tab')).toBe('open the billing tab');
   });
 
   it('refuses blank text and a step that is gone', async () => {
-    expect(await appendToStepDescription('s1', '   ')).toBeNull();
-    expect(await appendToStepDescription('missing', 'anything')).toBeNull();
+    const rowId = await seedRow();
+    expect(await addTranscriptLineToStep(rowId, 0, 's1', '   ')).toBeNull();
+    expect(await addTranscriptLineToStep(rowId, 0, 'missing', 'anything')).toBeNull();
+  });
+
+  it('refuses a second click on a line that is already used', async () => {
+    const rowId = await seedRow();
+    await addTranscriptLineToStep(rowId, 0, 's1', 'then confirm the change');
+
+    expect(await addTranscriptLineToStep(rowId, 0, 's1', 'then confirm the change')).toBeNull();
+    expect((await db.steps.get('s1'))?.description).toBe('Clicked Billing then confirm the change');
+  });
+
+  it('refuses a line index that is not in the row', async () => {
+    const rowId = await seedRow();
+    expect(await addTranscriptLineToStep(rowId, 7, 's1', 'anything')).toBeNull();
+    expect((await db.steps.get('s1'))?.description).toBe('Clicked Billing');
   });
 });
 
@@ -283,8 +326,7 @@ describe('a line pushed onto a step by hand', () => {
     await saveTranscript('g1', transcript);
     const row = (await getTranscripts('g1'))[0];
 
-    await appendToStepDescription('s1', 'and then confirm it');
-    await attachTranscriptLine(row.id, 1, 's1');
+    await addTranscriptLineToStep(row.id, 1, 's1', 'and then confirm it');
     expect((await getTranscripts('g1'))[0].lines[1]).toMatchObject({ stepId: 's1', addedByHand: true });
 
     await restoreNarratedDescription('s1');
@@ -333,5 +375,173 @@ describe('restoring an older version', () => {
     await revertToSnapshot((snapshot as { id: string }).id);
 
     expect((await db.steps.get('s1'))?.narratedDescription).toBe(SPOKEN);
+  });
+});
+
+describe('deleting a transcript and the description narration wrote', () => {
+  const transcript = {
+    epochMs: 1_700_000_000_000,
+    lines: [{ start: 1, end: 3, text: SPOKEN, stepId: 's1', rejectReason: null }],
+  };
+
+  it('does not leave the spoken words sitting in the description', async () => {
+    await db.steps.update('s1', { elementMeta: BUTTON_META });
+    await applyNarrationToSteps([{ stepId: 's1', description: SPOKEN }]);
+    await saveTranscript('g1', transcript);
+
+    await deleteTranscripts('g1');
+
+    const step = await db.steps.get('s1');
+    expect(step?.description).toBe('steps.click[Billing]');
+    expect(step?.descriptionSource).toBe('heuristic');
+  });
+
+  it('falls back to the navigate wording for a step with no element', async () => {
+    await db.steps.update('s1', { action: 'navigate', elementMeta: undefined });
+    await applyNarrationToSteps([{ stepId: 's1', description: SPOKEN }]);
+    await saveTranscript('g1', transcript);
+
+    await deleteTranscripts('g1');
+
+    expect((await db.steps.get('s1'))?.description).toBe('steps.navigate');
+  });
+
+  it('strips a line the user added to a step by hand', async () => {
+    const secret = 'my password is hunter2';
+    await saveTranscript('g1', {
+      epochMs: 1_700_000_000_000,
+      lines: [{ start: 4, end: 6, text: secret, stepId: null, rejectReason: null }],
+    });
+    const row = (await getTranscripts('g1'))[0];
+    await addTranscriptLineToStep(row.id, 0, 's1', secret);
+    expect((await db.steps.get('s1'))?.description).toContain('hunter2');
+
+    await deleteTranscripts('g1');
+
+    const step = await db.steps.get('s1');
+    expect(step?.description).not.toContain('hunter2');
+    expect(step?.description).toBe('Clicked Billing');
+  });
+
+  it('leaves a description the user wrote alone', async () => {
+    await applyNarrationToSteps([{ stepId: 's1', description: SPOKEN }]);
+    await saveTranscript('g1', transcript);
+    await updateStepDescription('s1', 'Click the Billing tab', 'manual');
+
+    await deleteTranscripts('g1');
+
+    const step = await db.steps.get('s1');
+    expect(step?.description).toBe('Click the Billing tab');
+    expect(step?.descriptionSource).toBe('manual');
+  });
+
+  it('takes the spoken words out of the snapshots as well', async () => {
+    await db.steps.update('s1', { elementMeta: BUTTON_META });
+    await applyNarrationToSteps([{ stepId: 's1', description: SPOKEN }]);
+    await createSnapshot('g1');
+    await saveTranscript('g1', transcript);
+
+    await deleteTranscripts('g1');
+
+    const snapshots = await db.snapshots.where('guideId').equals('g1').toArray();
+    expect(snapshots.flatMap((s) => s.steps).some((s) => s.description === SPOKEN)).toBe(false);
+  });
+});
+
+describe('a transcript that lands after its guide was merged away', () => {
+  const unattributed = {
+    epochMs: 1_700_000_000_000,
+    lines: [{ start: 1, end: 3, text: 'a stray thought', stepId: null, rejectReason: null }],
+  };
+
+  async function addTarget(id: string): Promise<void> {
+    await db.guides.add({
+      id,
+      title: id,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      stepIds: [],
+      starred: false,
+      deletedAt: null,
+    });
+  }
+
+  it('is filed against the target even when no line resolves through a step', async () => {
+    await addTarget('target');
+    await mergeGuideInto('g1', 'target', 0);
+    await db.steps.clear();
+
+    await saveTranscript('g1', unattributed);
+
+    expect(await hasTranscript('target')).toBe(true);
+  });
+
+  it('records the redirect in the database, not in memory', async () => {
+    await addTarget('target');
+    await mergeGuideInto('g1', 'target', 0);
+
+    expect(await db.guideMerges.get('g1')).toMatchObject({ targetGuideId: 'target' });
+  });
+
+  it('drops the redirect when the target guide is permanently deleted', async () => {
+    await addTarget('target');
+    await mergeGuideInto('g1', 'target', 0);
+
+    await permanentlyDeleteGuide('target');
+
+    expect(await db.guideMerges.get('g1')).toBeUndefined();
+  });
+
+  it('follows a guide that was merged away more than once', async () => {
+    await addTarget('target');
+    await addTarget('final');
+    await mergeGuideInto('g1', 'target', 0);
+    await mergeGuideInto('target', 'final', 0);
+    await db.steps.clear();
+
+    await saveTranscript('g1', unattributed);
+
+    expect(await hasTranscript('final')).toBe(true);
+  });
+
+  it('is dropped when the target is gone too', async () => {
+    await addTarget('target');
+    await mergeGuideInto('g1', 'target', 0);
+    await db.steps.clear();
+    await db.guides.delete('target');
+
+    await saveTranscript('g1', unattributed);
+
+    expect(await db.transcripts.count()).toBe(0);
+  });
+});
+
+describe('pushing a line onto a step', () => {
+  const transcript = {
+    epochMs: 1_700_000_000_000,
+    lines: [
+      { start: 1, end: 3, text: SPOKEN, stepId: 's1', rejectReason: null },
+      { start: 4, end: 6, text: 'and then confirm it', stepId: null, rejectReason: null },
+    ],
+  };
+
+  it('writes the description and marks the line in one go', async () => {
+    await saveTranscript('g1', transcript);
+    const row = (await getTranscripts('g1'))[0];
+
+    const written = await addTranscriptLineToStep(row.id, 1, 's1', 'and then confirm it');
+
+    expect(written).toBe('Clicked Billing and then confirm it');
+    expect((await getTranscripts('g1'))[0].lines[1]).toMatchObject({ stepId: 's1', addedByHand: true });
+  });
+
+  it('cannot append the words while leaving the line reading unused', async () => {
+    await saveTranscript('g1', transcript);
+    const row = (await getTranscripts('g1'))[0];
+
+    expect(await addTranscriptLineToStep(row.id, 1, 'missing', 'and then confirm it')).toBeNull();
+
+    expect((await db.steps.get('s1'))?.description).toBe('Clicked Billing');
+    expect((await getTranscripts('g1'))[0].lines[1].stepId).toBeNull();
   });
 });
