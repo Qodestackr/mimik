@@ -43,7 +43,11 @@ beforeEach(() => {
 
 describe('applying a narration result', () => {
   it('stores the transcript, rejected lines and all', async () => {
-    await applyNarration('g1', { descriptions: [{ stepId: 's1', text: 'Open the billing tab' }], transcript, stats });
+    await applyNarration(
+      'g1',
+      { descriptions: [{ stepId: 's1', text: 'Open the billing tab' }], transcript, stats },
+      false,
+    );
 
     expect(saveTranscript).toHaveBeenCalledWith('g1', transcript);
   });
@@ -51,7 +55,7 @@ describe('applying a narration result', () => {
   it('stores a slice that attributed nothing at all', async () => {
     const orphaned = { epochMs: transcript.epochMs, lines: [transcript.lines[1]] };
 
-    await applyNarration('g1', { descriptions: [], transcript: orphaned, stats });
+    await applyNarration('g1', { descriptions: [], transcript: orphaned, stats }, false);
 
     expect(saveTranscript).toHaveBeenCalledWith('g1', orphaned);
     expect(applyNarrationToSteps).toHaveBeenCalledWith([]);
@@ -60,8 +64,8 @@ describe('applying a narration result', () => {
   it('keeps each transcribed slice as its own stored row', async () => {
     const second = { epochMs: transcript.epochMs + 30_000, lines: transcript.lines };
 
-    await applyNarration('g1', { descriptions: [], transcript, stats });
-    await applyNarration('g1', { descriptions: [], transcript: second, stats });
+    await applyNarration('g1', { descriptions: [], transcript, stats }, false);
+    await applyNarration('g1', { descriptions: [], transcript: second, stats }, false);
 
     expect(saveTranscript).toHaveBeenCalledTimes(2);
     expect(saveTranscript.mock.calls.map((call) => call[1].epochMs)).toEqual([transcript.epochMs, second.epochMs]);
@@ -70,7 +74,11 @@ describe('applying a narration result', () => {
   it('still applies the narration when the transcript cannot be stored', async () => {
     saveTranscript.mockRejectedValue(new Error('QuotaExceededError'));
 
-    await applyNarration('g1', { descriptions: [{ stepId: 's1', text: 'Open the billing tab' }], transcript, stats });
+    await applyNarration(
+      'g1',
+      { descriptions: [{ stepId: 's1', text: 'Open the billing tab' }], transcript, stats },
+      false,
+    );
 
     expect(applyNarrationToSteps).toHaveBeenCalledWith([{ stepId: 's1', description: 'Open the billing tab' }]);
   });
