@@ -78,15 +78,21 @@ async function encodes(codec: string, width: number, height: number): Promise<bo
   }
 }
 
-async function probe(spec: ResolutionSpec): Promise<VideoContainer | null> {
-  if (typeof VideoEncoder === 'undefined') return null;
-  if (await encodes(spec.avc, spec.width, spec.height)) return 'mp4';
-  return (await encodes(spec.vp9, spec.width, spec.height)) ? 'webm' : null;
+async function probe(spec: ResolutionSpec): Promise<VideoContainer[]> {
+  if (typeof VideoEncoder === 'undefined') return [];
+  const [avc, vp9] = await Promise.all([
+    encodes(spec.avc, spec.width, spec.height),
+    encodes(spec.vp9, spec.width, spec.height),
+  ]);
+  const containers: VideoContainer[] = [];
+  if (avc) containers.push('mp4');
+  if (vp9) containers.push('webm');
+  return containers;
 }
 
-const pending = new Map<VideoResolution, Promise<VideoContainer | null>>();
+const pending = new Map<VideoResolution, Promise<VideoContainer[]>>();
 
-export function pickContainer(resolution: VideoResolution = '720p'): Promise<VideoContainer | null> {
+export function availableContainers(resolution: VideoResolution = '720p'): Promise<VideoContainer[]> {
   const cached = pending.get(resolution);
   if (cached) return cached;
   const next = probe(RESOLUTION_SPECS[resolution]);
@@ -94,6 +100,10 @@ export function pickContainer(resolution: VideoResolution = '720p'): Promise<Vid
   return next;
 }
 
+export async function pickContainer(resolution: VideoResolution = '720p'): Promise<VideoContainer | null> {
+  return (await availableContainers(resolution))[0] ?? null;
+}
+
 export async function canExportVideo(): Promise<boolean> {
-  return (await pickContainer()) !== null;
+  return (await availableContainers()).length > 0;
 }

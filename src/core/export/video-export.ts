@@ -5,12 +5,12 @@ import type { ExportOptions } from '@/core/export/options';
 import { loadExportOptions } from '@/core/export/options';
 import { extractDomain, formatDate } from '@/core/export/utils';
 import {
+  availableContainers,
   COVER_SECONDS,
   FPS,
   FRAME_FILL,
   FRAME_HEIGHT,
   FRAME_WIDTH,
-  pickContainer,
   RESOLUTION_SPECS,
   STEP_SECONDS,
   STEP_ZOOM_TRANSITION_SEC,
@@ -716,11 +716,23 @@ export function stepKind(step: Step): StepKind {
   return 'click';
 }
 
+/**
+ * Why narration did not make it into the video. `failed` carries the thrown message in `detail`;
+ * the other three are the deliberate skips, which used to return silently and leave the export
+ * panel reporting a narrated video that had no audio in it.
+ */
+export type VoiceoverSkipReason = 'failed' | 'noAudioCodec' | 'noKey' | 'nothingToSay';
+
+export interface VoiceoverSkip {
+  reason: VoiceoverSkipReason;
+  detail?: string;
+}
+
 export interface VideoExportResult {
   blob: Blob;
   extension: string;
   chapters: VideoChapter[];
-  voiceoverError?: string;
+  voiceoverError?: VoiceoverSkip;
 }
 
 export function videoChapters(frames: Step[], cover: boolean, fps = FPS, timeline?: VideoTimeline): VideoChapter[] {
@@ -860,24 +872,27 @@ export async function composeGuideFrames(
 }
 
 interface PreparedVoiceover {
+  container: VideoContainer;
   codec: 'aac' | 'opus';
   clips: Map<number, AudioBuffer>;
   timeline: VideoTimeline;
 }
 
+type NarrationOutcome = { voice: PreparedVoiceover; error?: undefined } | { voice: null; error: VoiceoverSkip };
+
 async function narrateOrSkip(
   guide: Guide,
   frames: Step[],
   cover: boolean,
-  container: VideoContainer,
+  containers: VideoContainer[],
   controls: VideoExportControls,
-): Promise<{ voice: PreparedVoiceover | null; error?: string }> {
+): Promise<NarrationOutcome> {
   try {
-    return { voice: await prepareVoiceover(guide, frames, cover, container, controls) };
+    return await prepareVoiceover(guide, frames, cover, containers, controls);
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') throw error;
     logger.error('[voiceover] narration failed, exporting a silent video', error);
-    return { voice: null, error: error instanceof Error ? error.message : String(error) };
+    return { voice: null, error: { reason: 'failed', detail: error instanceof Error ? error.message : String(error) } };
   }
 }
 
@@ -885,30 +900,41 @@ async function prepareVoiceover(
   guide: Guide,
   frames: Step[],
   cover: boolean,
-  container: VideoContainer,
+  containers: VideoContainer[],
   controls: VideoExportControls,
-): Promise<PreparedVoiceover | null> {
-  const [{ pickVoiceCodec }, { resolveVoiceoverConfig, VOICEOVER_SETTINGS }, { voiceoverScript }, { renderVoiceover }] =
-    await Promise.all([
-      import('./voiceover/audio'),
-      import('./voiceover/config'),
-      import('./voiceover/script'),
-      import('./voiceover/render'),
-    ]);
+): Promise<NarrationOutcome> {
+  const [
+    { pickVoiceContainer },
+    { resolveVoiceoverConfig, VOICEOVER_SETTINGS },
+    { voiceoverProvider },
+    { voiceoverScript },
+    { renderVoiceover },
+  ] = await Promise.all([
+    import('./voiceover/audio'),
+    import('./voiceover/config'),
+    import('./voiceover/providers'),
+    import('./voiceover/script'),
+    import('./voiceover/render'),
+  ]);
 
   const config = resolveVoiceoverConfig(await localStorage.get([...VOICEOVER_SETTINGS]));
   if (!config.apiKey) {
-    logger.warn('[voiceover] skipped: no ElevenLabs API key');
-    return null;
+    // logger.warn is compiled out of a built extension, so every skip logs at error level: a
+    // silent skip that neither reaches the UI nor the console is undebuggable.
+    logger.error('[voiceover] skipped: no', voiceoverProvider(config.provider).label, 'API key');
+    return { voice: null, error: { reason: 'noKey' } };
   }
 
   const segments = voiceoverScript(guide, frames, cover);
-  if (segments.length === 0) return null;
+  if (segments.length === 0) {
+    logger.error('[voiceover] skipped: this guide has no text to read aloud');
+    return { voice: null, error: { reason: 'nothingToSay' } };
+  }
 
-  const codec = await pickVoiceCodec(container);
-  if (!codec) {
-    logger.warn('[voiceover] skipped: this browser cannot encode', container === 'mp4' ? 'AAC' : 'Opus');
-    return null;
+  const picked = await pickVoiceContainer(containers);
+  if (!picked) {
+    logger.error('[voiceover] skipped: this browser cannot encode audio for', containers.join('/') || 'any container');
+    return { voice: null, error: { reason: 'noAudioCodec' } };
   }
 
   const clips = await renderVoiceover(segments, config, {
@@ -917,7 +943,14 @@ async function prepareVoiceover(
   });
 
   const seconds = new Map(Array.from(clips, ([index, clip]) => [index, clip.duration]));
-  return { codec, clips, timeline: voiceTimeline(frames.length, seconds) };
+  return {
+    voice: {
+      container: picked.container,
+      codec: picked.codec,
+      clips,
+      timeline: voiceTimeline(frames.length, seconds),
+    },
+  };
 }
 
 export function voiceoverPlacement(
@@ -959,17 +992,20 @@ export async function exportGuideAsVideo(
   ]);
 
   const requested = RESOLUTION_SPECS[options.resolution] ? options.resolution : '720p';
-  const preferred = await pickContainer(requested);
-  const resolution = preferred ? requested : '720p';
-  const container = preferred ?? (await pickContainer('720p'));
-  if (!container) throw new Error('This browser cannot encode video');
-  const mp4 = container === 'mp4';
+  const preferred = await availableContainers(requested);
+  const resolution = preferred.length > 0 ? requested : '720p';
+  const containers = preferred.length > 0 ? preferred : await availableContainers('720p');
+  if (containers.length === 0) throw new Error('This browser cannot encode video');
   const spec = RESOLUTION_SPECS[resolution];
 
-  const narration = options.voiceover
-    ? await narrateOrSkip(guide, frames, Boolean(options.cover), container, controls)
+  // Narration runs first because it also settles the container: a browser that encodes H.264 but
+  // not AAC has to fall back to WebM/Opus rather than mp4, which it could not write audio into.
+  const narration: NarrationOutcome | { voice: null; error?: undefined } = options.voiceover
+    ? await narrateOrSkip(guide, frames, Boolean(options.cover), containers, controls)
     : { voice: null };
   const voice = narration.voice;
+  const container = voice?.container ?? containers[0];
+  const mp4 = container === 'mp4';
   const timeline = voice?.timeline ?? uniformTimeline(frames.length);
 
   const canvas = document.createElement('canvas');

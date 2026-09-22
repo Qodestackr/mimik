@@ -1,3 +1,5 @@
+import type { VideoContainer } from '@/core/export/video-support';
+
 export const VOICE_SAMPLE_RATE = 44100;
 
 export type VoiceCodec = 'aac' | 'opus';
@@ -72,8 +74,23 @@ export async function writeVoiceTrack(
   }
 }
 
-export async function pickVoiceCodec(container: 'mp4' | 'webm'): Promise<VoiceCodec | null> {
+export async function pickVoiceCodec(container: VideoContainer): Promise<VoiceCodec | null> {
   const { canEncodeAudio } = await import('mediabunny');
   const codec: VoiceCodec = container === 'mp4' ? 'aac' : 'opus';
   return (await canEncodeAudio(codec, { numberOfChannels: 1, sampleRate: VOICE_SAMPLE_RATE })) ? codec : null;
+}
+
+/**
+ * Picks the first container this browser can encode *audio* into. Video support alone is not
+ * enough: Chromium on Linux encodes H.264 but not AAC, so preferring mp4 there lands the export in
+ * a container it cannot write the voice track into, while WebM/Opus would have worked.
+ */
+export async function pickVoiceContainer(
+  containers: VideoContainer[],
+): Promise<{ container: VideoContainer; codec: VoiceCodec } | null> {
+  for (const container of containers) {
+    const codec = await pickVoiceCodec(container);
+    if (codec) return { container, codec };
+  }
+  return null;
 }

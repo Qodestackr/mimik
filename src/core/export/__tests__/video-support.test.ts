@@ -48,6 +48,33 @@ describe('codec strings', () => {
   });
 });
 
+describe('availableContainers', () => {
+  it('lists both containers when both video codecs encode, so audio support can break the tie', async () => {
+    stubEncoder(() => true);
+    const { availableContainers } = await freshModule();
+    expect(await availableContainers()).toEqual(['mp4', 'webm']);
+  });
+
+  it('still probes vp9 when avc encodes, since the caller may need the webm option', async () => {
+    const probed = stubEncoder(() => true);
+    const { availableContainers } = await freshModule();
+    await availableContainers();
+    expect(probed.some((c) => c.codec === VP9_CODEC)).toBe(true);
+  });
+
+  it('lists only what encodes', async () => {
+    stubEncoder((codec) => codec === VP9_CODEC);
+    const { availableContainers } = await freshModule();
+    expect(await availableContainers()).toEqual(['webm']);
+  });
+
+  it('is empty when nothing encodes', async () => {
+    stubEncoder(() => false);
+    const { availableContainers } = await freshModule();
+    expect(await availableContainers()).toEqual([]);
+  });
+});
+
 describe('pickContainer', () => {
   it('returns mp4 when the High Profile string encodes', async () => {
     stubEncoder((codec) => codec === AVC_CODEC);

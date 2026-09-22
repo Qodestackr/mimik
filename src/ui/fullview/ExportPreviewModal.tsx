@@ -15,7 +15,7 @@ import {
 } from '@/core/export/options';
 import { exportGuideAsPDF } from '@/core/export/pdf-export';
 import { paginatePreview, withPreviewStyles } from '@/core/export/preview';
-import type { VideoChapter } from '@/core/export/video-export';
+import type { VideoChapter, VoiceoverSkip } from '@/core/export/video-export';
 import { COVER_SECONDS, canExportVideo, STEP_SECONDS } from '@/core/export/video-support';
 import { hasVoiceoverKey, VOICEOVER_SETTINGS } from '@/core/export/voiceover/config';
 import type { Guide, Screenshot, Step } from '@/core/guides/types';
@@ -29,6 +29,13 @@ const VideoStepPlayer = lazy(() => import('@/ui/fullview/VideoStepPlayer'));
 const VIDEO_AUTOPLAY_STEP_LIMIT = 25;
 
 const IMAGE_SCALES: ImageScale[] = ['small', 'medium', 'large'];
+
+const VOICEOVER_SKIP_MESSAGES = {
+  failed: 'exportPreview.voiceoverFailed',
+  noAudioCodec: 'exportPreview.voiceoverNoAudioCodec',
+  noKey: 'exportPreview.voiceoverNoKeySkip',
+  nothingToSay: 'exportPreview.voiceoverNothingToSay',
+} as const satisfies Record<VoiceoverSkip['reason'], string>;
 
 interface ExportPreviewModalProps {
   open: boolean;
@@ -59,7 +66,7 @@ export default function ExportPreviewModal({ open, onOpenChange, guide, steps, s
   const [voiceoverReady, setVoiceoverReady] = useState(false);
   const [voiceProgress, setVoiceProgress] = useState<{ done: number; total: number } | null>(null);
   const [, setNarratedSeconds] = useState<number | null>(null);
-  const [voiceoverError, setVoiceoverError] = useState<string | null>(null);
+  const [voiceoverError, setVoiceoverError] = useState<VoiceoverSkip | null>(null);
 
   useEffect(() => {
     if (open) loadExportOptions().then(setOptions);
@@ -204,7 +211,11 @@ export default function ExportPreviewModal({ open, onOpenChange, guide, steps, s
         downloadAbort.current = controller;
         setDownloadProgress(0);
         const { exportGuideAsVideo } = await import('@/core/export/video-export');
-        const { blob, extension } = await exportGuideAsVideo(
+        const {
+          blob,
+          extension,
+          voiceoverError: failed,
+        } = await exportGuideAsVideo(
           guide,
           steps,
           screenshots,
@@ -215,6 +226,9 @@ export default function ExportPreviewModal({ open, onOpenChange, guide, steps, s
             onVoiceProgress: (done, total) => setVoiceProgress(done < total ? { done, total } : null),
           },
         );
+        // A download that never opened the video tab must still say the narration was dropped:
+        // the guide can be exported to video straight from the format list.
+        setVoiceoverError(failed ?? null);
         downloadBlob(blob, safeFilename(guide.title, extension));
       } else if (format === 'bundle') {
         const { exportGuideAsBundle } = await import('@/core/transfer/bundle');
@@ -386,7 +400,7 @@ export default function ExportPreviewModal({ open, onOpenChange, guide, steps, s
                     className="mt-1.5 rounded-lg px-2.5 py-2 text-[10px] leading-snug text-destructive bg-destructive/10"
                     role="alert"
                   >
-                    {i18n.t('exportPreview.voiceoverFailed')}
+                    {i18n.t(VOICEOVER_SKIP_MESSAGES[voiceoverError.reason])}
                   </div>
                 )}
               </div>

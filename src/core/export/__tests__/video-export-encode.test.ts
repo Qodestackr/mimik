@@ -7,7 +7,7 @@ const rec = vi.hoisted(() => ({
   calls: [] as { m: string; a: unknown[] }[],
   added: [] as { at: number; dur: number }[],
   closed: 0,
-  container: 'mp4' as 'mp4' | 'webm' | null,
+  containers: ['mp4'] as ('mp4' | 'webm')[],
   probed: [] as string[],
   started: 0,
   finalized: 0,
@@ -18,7 +18,7 @@ const rec = vi.hoisted(() => ({
 }));
 
 const voice = vi.hoisted(() => ({
-  codec: 'aac' as 'aac' | 'opus' | null,
+  codecs: ['aac', 'opus'] as ('aac' | 'opus')[],
   settings: { voiceoverProvider: 'openai', voiceoverApiKeys: { openai: 'sk_test' } } as Record<string, unknown>,
   clips: new Map<number, AudioBuffer>(),
 }));
@@ -102,9 +102,9 @@ vi.mock('@/core/export/video-support', async () => {
   const actual = await vi.importActual<typeof import('@/core/export/video-support')>('@/core/export/video-support');
   return {
     ...actual,
-    pickContainer: vi.fn(async (r = '720p') => {
+    availableContainers: vi.fn(async (r = '720p') => {
       rec.probed.push(r);
-      return rec.container;
+      return [...rec.containers];
     }),
   };
 });
@@ -117,7 +117,13 @@ vi.mock('@/core/export/voiceover/audio', async () => {
   const actual = await vi.importActual<typeof import('@/core/export/voiceover/audio')>('@/core/export/voiceover/audio');
   return {
     ...actual,
-    pickVoiceCodec: vi.fn(async () => voice.codec),
+    pickVoiceContainer: vi.fn(async (containers: ('mp4' | 'webm')[]) => {
+      for (const container of containers) {
+        const codec = container === 'mp4' ? ('aac' as const) : ('opus' as const);
+        if (voice.codecs.includes(codec)) return { container, codec };
+      }
+      return null;
+    }),
   };
 });
 
@@ -189,7 +195,7 @@ beforeEach(() => {
   rec.calls = [];
   rec.added = [];
   rec.closed = 0;
-  rec.container = 'mp4';
+  rec.containers = ['mp4'];
   rec.probed = [];
   rec.started = 0;
   rec.finalized = 0;
@@ -197,7 +203,7 @@ beforeEach(() => {
   rec.buffer = true;
   rec.audio = [];
   rec.audioTracks = 0;
-  voice.codec = 'aac';
+  voice.codecs = ['aac', 'opus'];
   voice.settings = { voiceoverProvider: 'openai', voiceoverApiKeys: { openai: 'sk_test' } };
   voice.clips = new Map();
   renderVoiceover.mockReset();
@@ -245,7 +251,7 @@ describe('exportGuideAsVideo guards', () => {
   });
 
   it('refuses when the browser cannot encode at all', async () => {
-    rec.container = null;
+    rec.containers = [];
     const steps = [makeStep(0)];
     await expect(exportGuideAsVideo(guide, steps, shotsFor(steps), opts())).rejects.toThrow(/cannot encode/i);
   });
@@ -270,7 +276,7 @@ describe('exportGuideAsVideo output', () => {
   });
 
   it('falls back to webm when mp4 is unavailable', async () => {
-    rec.container = 'webm';
+    rec.containers = ['webm'];
     const steps = [makeStep(0)];
     const result = await exportGuideAsVideo(guide, steps, shotsFor(steps), opts({ cover: false }));
 
@@ -533,7 +539,8 @@ describe('exportGuideAsVideo voiceover', () => {
     const result = await exportGuideAsVideo(guide, steps, shotsFor(steps), opts({ cover: false, voiceover: true }));
 
     expect(result.blob).toBeInstanceOf(Blob);
-    expect(result.voiceoverError).toMatch(/401/);
+    expect(result.voiceoverError?.reason).toBe('failed');
+    expect(result.voiceoverError?.detail).toMatch(/401/);
     expect(rec.audioTracks).toBe(0);
     expect(rec.added).toHaveLength(157 * 2 - 10);
   });
@@ -556,24 +563,77 @@ describe('exportGuideAsVideo voiceover', () => {
     expect(rec.audioTracks).toBe(1);
   });
 
-  it('falls back to a silent video when no key is stored', async () => {
+  it('falls back to a silent video when no key is stored, and says so', async () => {
     voice.settings = {};
     voice.clips = new Map([[0, clip(9)]]);
     const steps = [makeStep(0), makeStep(1)];
-    await exportGuideAsVideo(guide, steps, shotsFor(steps), opts({ cover: false, voiceover: true }));
+    const result = await exportGuideAsVideo(guide, steps, shotsFor(steps), opts({ cover: false, voiceover: true }));
 
     expect(rec.audioTracks).toBe(0);
     expect(rec.added).toHaveLength(157 * 2 - 10);
+    expect(result.voiceoverError).toEqual({ reason: 'noKey' });
   });
 
-  it('falls back to a silent video when the browser cannot encode audio', async () => {
-    voice.codec = null;
+  it('falls back to a silent video when the browser cannot encode audio, and says so', async () => {
+    voice.codecs = [];
     voice.clips = new Map([[0, clip(9)]]);
     const steps = [makeStep(0)];
-    await exportGuideAsVideo(guide, steps, shotsFor(steps), opts({ cover: false, voiceover: true }));
+    const result = await exportGuideAsVideo(guide, steps, shotsFor(steps), opts({ cover: false, voiceover: true }));
 
     expect(rec.audioTracks).toBe(0);
     expect(rec.added).toHaveLength(157);
+    expect(result.voiceoverError).toEqual({ reason: 'noAudioCodec' });
+  });
+
+  it('reports the skip when the guide has nothing to read aloud', async () => {
+    voice.clips = new Map([[0, clip(9)]]);
+    const steps = [{ ...makeStep(0), description: '' }];
+    const result = await exportGuideAsVideo(guide, steps, shotsFor(steps), opts({ cover: false, voiceover: true }));
+
+    expect(rec.audioTracks).toBe(0);
+    expect(result.voiceoverError).toEqual({ reason: 'nothingToSay' });
+  });
+
+  it('reports no error at all when narration lands', async () => {
+    voice.clips = new Map([[0, clip(2)]]);
+    const steps = [makeStep(0)];
+    const result = await exportGuideAsVideo(guide, steps, shotsFor(steps), opts({ cover: false, voiceover: true }));
+
+    expect(rec.audioTracks).toBe(1);
+    expect(result.voiceoverError).toBeUndefined();
+  });
+
+  it('prefers the container whose audio codec this browser can encode', async () => {
+    // Chromium on Linux: H.264 and VP9 both encode, but AAC does not.
+    rec.containers = ['mp4', 'webm'];
+    voice.codecs = ['opus'];
+    voice.clips = new Map([[0, clip(2)]]);
+    const steps = [makeStep(0)];
+    const result = await exportGuideAsVideo(guide, steps, shotsFor(steps), opts({ cover: false, voiceover: true }));
+
+    expect(result.extension).toBe('webm');
+    expect(rec.audioTracks).toBe(1);
+    expect(result.voiceoverError).toBeUndefined();
+  });
+
+  it('keeps mp4 when its audio codec is available too', async () => {
+    rec.containers = ['mp4', 'webm'];
+    voice.clips = new Map([[0, clip(2)]]);
+    const steps = [makeStep(0)];
+    const result = await exportGuideAsVideo(guide, steps, shotsFor(steps), opts({ cover: false, voiceover: true }));
+
+    expect(result.extension).toBe('mp4');
+    expect(rec.audioTracks).toBe(1);
+  });
+
+  it('leaves a silent export on the preferred container', async () => {
+    rec.containers = ['mp4', 'webm'];
+    voice.codecs = ['opus'];
+    const steps = [makeStep(0)];
+    const result = await exportGuideAsVideo(guide, steps, shotsFor(steps), opts({ cover: false }));
+
+    expect(result.extension).toBe('mp4');
+    expect(rec.audioTracks).toBe(0);
   });
 
   it('stretches the chapter marks to match the narrated timeline', async () => {
