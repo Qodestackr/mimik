@@ -157,6 +157,10 @@ describe('parseGuideMeta', () => {
     });
   });
 
+  it('collapses a newline the model put inside the title', () => {
+    expect(parseGuideMeta('{"title": "Okta\\nReset"}')?.title).toBe('Okta Reset');
+  });
+
   it('unwraps a fenced code block the model added anyway', () => {
     expect(parseGuideMeta('```json\n{"title": "Okta Reset"}\n```')).toEqual({
       title: 'Okta Reset',
