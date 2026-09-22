@@ -119,7 +119,7 @@ export default defineBackground(() => {
     getActor().subscribe(() => broadcastStateToPanel(getStateUpdate()));
   });
 
-  const resume = () => resumeFromPause(() => void startNarrationIfPossible());
+  const resume = () => resumeFromPause(startNarrationIfPossible);
 
   onMessage('getState', async () => {
     await waitUntilReady();
