@@ -242,7 +242,7 @@ export default function RecordingView({ guideId, onStop, voice, aiFailure, pause
                 <button
                   onClick={handleBlur}
                   disabled={paused}
-                  className="w-10 h-10 rounded-full border border-border flex items-center justify-center transition-colors text-muted-foreground hover:border-accent hover:text-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-10 h-10 shrink-0 rounded-full border border-border flex items-center justify-center transition-colors text-muted-foreground hover:border-accent hover:text-accent disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <EyeOff size={16} />
                 </button>
