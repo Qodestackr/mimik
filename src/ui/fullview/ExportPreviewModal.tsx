@@ -23,6 +23,13 @@ import { BUNDLE_EXTENSION } from '@/core/transfer/schema';
 import { localStorage } from '@/lib/browser-api';
 import { Button } from '@/ui/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/ui/components/ui/dialog';
+import {
+  encodeProgress,
+  MUX_PROGRESS_SHARE,
+  muxProgress,
+  narrateProgress,
+  VOICE_PROGRESS_SHARE,
+} from '@/ui/fullview/export-progress';
 
 const VideoStepPlayer = lazy(() => import('@/ui/fullview/VideoStepPlayer'));
 
@@ -97,6 +104,8 @@ export default function ExportPreviewModal({ open, onOpenChange, guide, steps, s
   const typedStepCount = steps.filter((step) => step.inputValue && screenshots.has(step.id)).length;
   const { cover, stepDescriptions, resolution, screenshots: withScreenshots, stepUrls, imageScale } = options;
   const voiceover = options.voiceover && voiceoverReady;
+  const voiceShare = voiceover ? VOICE_PROGRESS_SHARE : 0;
+  const muxShare = voiceover ? MUX_PROGRESS_SHARE : 0;
 
   const previewOptions = useMemo<ExportOptions>(
     () => ({ ...DEFAULT_EXPORT_OPTIONS, cover, screenshots: withScreenshots, stepUrls, imageScale, stepDescriptions }),
@@ -133,6 +142,7 @@ export default function ExportPreviewModal({ open, onOpenChange, guide, steps, s
     setNarratedSeconds(null);
     setVoiceoverError(null);
     const timer = setTimeout(async () => {
+      let allClipsLanded = false;
       try {
         const { exportGuideAsVideo } = await import('@/core/export/video-export');
         const {
@@ -148,10 +158,21 @@ export default function ExportPreviewModal({ open, onOpenChange, guide, steps, s
           {
             signal: controller.signal,
             onProgress: (encoded, frames) => {
-              if (!controller.signal.aborted) setVideoProgress(frames > 0 ? encoded / frames : 0);
+              if (controller.signal.aborted) return;
+              setVoiceProgress(null);
+              setVideoProgress(
+                encodeProgress(encoded, frames, allClipsLanded ? voiceShare : 0, allClipsLanded ? muxShare : 0),
+              );
             },
             onVoiceProgress: (done, total) => {
-              if (!controller.signal.aborted) setVoiceProgress(done < total ? { done, total } : null);
+              if (controller.signal.aborted) return;
+              allClipsLanded = done === total;
+              setVoiceProgress(done < total ? { done, total } : null);
+              setVideoProgress(narrateProgress(done, total, voiceShare));
+            },
+            onMuxProgress: (done, total) => {
+              if (controller.signal.aborted) return;
+              setVideoProgress(muxProgress(done, total, muxShare));
             },
           },
         );
@@ -177,7 +198,20 @@ export default function ExportPreviewModal({ open, onOpenChange, guide, steps, s
       if (url) URL.revokeObjectURL(url);
       setVideoUrl(null);
     };
-  }, [open, mode, guide, steps, screenshots, cover, stepDescriptions, resolution, voiceover, videoPending]);
+  }, [
+    open,
+    mode,
+    guide,
+    steps,
+    screenshots,
+    cover,
+    stepDescriptions,
+    resolution,
+    voiceover,
+    voiceShare,
+    muxShare,
+    videoPending,
+  ]);
 
   const update = (patch: Partial<ExportOptions>) => {
     const next = { ...options, ...patch };
@@ -211,6 +245,7 @@ export default function ExportPreviewModal({ open, onOpenChange, guide, steps, s
         downloadAbort.current = controller;
         setDownloadProgress(0);
         const { exportGuideAsVideo } = await import('@/core/export/video-export');
+        let allClipsLanded = false;
         const {
           blob,
           extension,
@@ -222,12 +257,17 @@ export default function ExportPreviewModal({ open, onOpenChange, guide, steps, s
           { ...options, voiceover },
           {
             signal: controller.signal,
-            onProgress: (encoded, frames) => setDownloadProgress(frames > 0 ? encoded / frames : 0),
-            onVoiceProgress: (done, total) => setVoiceProgress(done < total ? { done, total } : null),
+            onProgress: (encoded, frames) =>
+              setDownloadProgress(
+                encodeProgress(encoded, frames, allClipsLanded ? voiceShare : 0, allClipsLanded ? muxShare : 0),
+              ),
+            onVoiceProgress: (done, total) => {
+              allClipsLanded = done === total;
+              setDownloadProgress(narrateProgress(done, total, voiceShare));
+            },
+            onMuxProgress: (done, total) => setDownloadProgress(muxProgress(done, total, muxShare)),
           },
         );
-        // A download that never opened the video tab must still say the narration was dropped:
-        // the guide can be exported to video straight from the format list.
         setVoiceoverError(failed ?? null);
         downloadBlob(blob, safeFilename(guide.title, extension));
       } else if (format === 'bundle') {
@@ -246,7 +286,6 @@ export default function ExportPreviewModal({ open, onOpenChange, guide, steps, s
       if (!(error instanceof DOMException && error.name === 'AbortError')) throw error;
     } finally {
       downloadAbort.current = null;
-      setVoiceProgress(null);
       setExporting(null);
     }
   }
