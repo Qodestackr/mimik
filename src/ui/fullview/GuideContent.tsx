@@ -14,6 +14,7 @@ import {
   updateStepDescription,
 } from '@/core/guides/service';
 import type { SnapshotLike } from '@/core/guides/snapshot-diff';
+import { MAX_TITLE_LENGTH, sanitizeGuideTitle, stripTitleLineBreaks } from '@/core/guides/title';
 import type { Guide, Screenshot, Snapshot, Step } from '@/core/guides/types';
 import type { ScreenshotEdits } from '@/core/screenshot/types';
 import { localStorage, openSidebar } from '@/lib/browser-api';
@@ -140,11 +141,16 @@ export default function GuideContent({ guideId, initialStepId, initialTool }: Gu
   }, []);
 
   const handleTitleBlur = useCallback(async () => {
-    if (!data || title === data.guide.title) return;
-    await updateGuideTitle(guideId, title);
-    setData((prev) => (prev ? { ...prev, guide: { ...prev.guide, title } } : prev));
-    document.title = `${title} — ${i18n.t('app_name')}`;
-  }, [data, guideId, title]);
+    const next = sanitizeGuideTitle(title);
+    if (next !== title) {
+      setTitle(next);
+      setGuideTitle(next);
+    }
+    if (!data || next === data.guide.title) return;
+    await updateGuideTitle(guideId, next);
+    setData((prev) => (prev ? { ...prev, guide: { ...prev.guide, title: next } } : prev));
+    document.title = `${next} — ${i18n.t('app_name')}`;
+  }, [data, guideId, title, setGuideTitle]);
 
   const handleGuideDescriptionBlur = useCallback(async () => {
     if (data && description !== (data.guide.description ?? '')) {
@@ -357,12 +363,21 @@ export default function GuideContent({ guideId, initialStepId, initialTool }: Gu
                 }}
                 value={title}
                 rows={1}
+                maxLength={Math.max(MAX_TITLE_LENGTH, title.length)}
                 onChange={(e) => {
-                  setTitle(e.target.value);
-                  setGuideTitle(e.target.value);
+                  const next = stripTitleLineBreaks(e.target.value);
+                  setTitle(next);
+                  setGuideTitle(next);
                   const el = e.target;
+                  el.value = next;
                   el.style.height = '0';
                   el.style.height = `${el.scrollHeight}px`;
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                    e.preventDefault();
+                    e.currentTarget.blur();
+                  }
                 }}
                 onBlur={handleTitleBlur}
                 className="text-[32px] font-extrabold bg-transparent border-b-2 border-transparent hover:border-border focus:outline-none focus:border-accent w-full p-0 text-foreground resize-none leading-tight overflow-hidden"
