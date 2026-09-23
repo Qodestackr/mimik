@@ -47,7 +47,6 @@ function duplicateButton(): HTMLButtonElement {
   return btn as HTMLButtonElement;
 }
 
-/** Lets the awaited duplicateGuide() resolve and React flush its state update. */
 async function settleMicrotasks() {
   await act(async () => {
     await Promise.resolve();
@@ -78,9 +77,6 @@ describe('TopNav duplicate', () => {
   it('makes one copy from a fast multi-click, not a chain of copies of copies', async () => {
     render(<TopNav route={route} />);
 
-    // The first click navigates to the copy in a couple of milliseconds. Without a guard that
-    // outlives the navigation, the later clicks land on the copy's own Duplicate button and fork
-    // it again, so a triple-click leaves "Copy of Copy of Copy of ..." behind.
     fireEvent.click(duplicateButton());
     await settleMicrotasks();
     fireEvent.click(duplicateButton());
@@ -107,7 +103,7 @@ describe('TopNav duplicate', () => {
     expect(duplicateGuide).toHaveBeenCalledTimes(2);
   });
 
-  it('re-enables immediately when the copy could not be made', async () => {
+  it('re-enables immediately when the copy could not be made, and says so', async () => {
     duplicateGuide.mockRejectedValue(new Error('boom'));
     render(<TopNav route={route} />);
 
@@ -116,5 +112,45 @@ describe('TopNav duplicate', () => {
 
     expect(navigate).not.toHaveBeenCalled();
     expect(duplicateButton().disabled).toBe(false);
+    expect(screen.getByRole('alert')).toBeTruthy();
+  });
+
+  it('reports a guide that was not there, which resolves null rather than throwing', async () => {
+    duplicateGuide.mockResolvedValue(null);
+    render(<TopNav route={route} />);
+
+    fireEvent.click(duplicateButton());
+    await settleMicrotasks();
+
+    expect(navigate).not.toHaveBeenCalled();
+    expect(screen.getByRole('alert')).toBeTruthy();
+  });
+
+  it('does not carry the message onto another guide, since the nav never unmounts', async () => {
+    duplicateGuide.mockRejectedValue(new Error('boom'));
+    const { rerender } = render(<TopNav route={route} />);
+
+    fireEvent.click(duplicateButton());
+    await settleMicrotasks();
+    expect(screen.getByRole('alert')).toBeTruthy();
+
+    rerender(<TopNav route={{ page: 'guide', guideId: 'g2' } as const} />);
+
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('clears the message when a later attempt succeeds', async () => {
+    duplicateGuide.mockRejectedValueOnce(new Error('boom'));
+    render(<TopNav route={route} />);
+
+    fireEvent.click(duplicateButton());
+    await settleMicrotasks();
+    expect(screen.getByRole('alert')).toBeTruthy();
+
+    duplicateGuide.mockResolvedValue('copy-1');
+    fireEvent.click(duplicateButton());
+    await settleMicrotasks();
+
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 });
