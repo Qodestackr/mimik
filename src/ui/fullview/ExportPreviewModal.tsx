@@ -1,4 +1,4 @@
-import { FileCode, FileDown, FileImage, FileText, Loader2, Package, TriangleAlert, Video } from 'lucide-react';
+import { FileCode, FileDown, FileImage, FileText, Loader2, Package, TriangleAlert, Video, Volume2 } from 'lucide-react';
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { i18n } from '#imports';
 import { downloadBlob, downloadText, safeFilename } from '@/core/export/download';
@@ -15,17 +15,34 @@ import {
 } from '@/core/export/options';
 import { exportGuideAsPDF } from '@/core/export/pdf-export';
 import { paginatePreview, withPreviewStyles } from '@/core/export/preview';
-import type { VideoChapter } from '@/core/export/video-export';
-import { canExportVideo, STEP_SECONDS } from '@/core/export/video-support';
+import type { VideoChapter, VoiceoverSkip } from '@/core/export/video-export';
+import { COVER_SECONDS, canExportVideo, STEP_SECONDS } from '@/core/export/video-support';
+import { hasVoiceoverKey, VOICEOVER_SETTINGS } from '@/core/export/voiceover/config';
 import type { Guide, Screenshot, Step } from '@/core/guides/types';
 import { BUNDLE_EXTENSION } from '@/core/transfer/schema';
+import { localStorage } from '@/lib/browser-api';
 import { Button } from '@/ui/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/ui/components/ui/dialog';
+import {
+  encodeProgress,
+  MUX_PROGRESS_SHARE,
+  muxProgress,
+  narrateProgress,
+  VOICE_PROGRESS_SHARE,
+} from '@/ui/fullview/export-progress';
 
 const VideoStepPlayer = lazy(() => import('@/ui/fullview/VideoStepPlayer'));
 
 const VIDEO_AUTOPLAY_STEP_LIMIT = 25;
+
 const IMAGE_SCALES: ImageScale[] = ['small', 'medium', 'large'];
+
+const VOICEOVER_SKIP_MESSAGES = {
+  failed: 'exportPreview.voiceoverFailed',
+  noAudioCodec: 'exportPreview.voiceoverNoAudioCodec',
+  noKey: 'exportPreview.voiceoverNoKeySkip',
+  nothingToSay: 'exportPreview.voiceoverNothingToSay',
+} as const satisfies Record<VoiceoverSkip['reason'], string>;
 
 interface ExportPreviewModalProps {
   open: boolean;
@@ -46,15 +63,31 @@ export default function ExportPreviewModal({ open, onOpenChange, guide, steps, s
   const [videoSupported, setVideoSupported] = useState(false);
   const [mode, setMode] = useState<PreviewMode>('document');
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [videoType, setVideoType] = useState<'video/mp4' | 'video/webm'>('video/mp4');
   const [videoChapters, setVideoChapters] = useState<VideoChapter[]>([]);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const downloadAbort = useRef<AbortController | null>(null);
   const [videoError, setVideoError] = useState<string | null>(null);
   const [videoProgress, setVideoProgress] = useState(0);
   const [videoRequested, setVideoRequested] = useState(false);
+  const [voiceoverReady, setVoiceoverReady] = useState(false);
+  const [voiceProgress, setVoiceProgress] = useState<{ done: number; total: number } | null>(null);
+  const [, setNarratedSeconds] = useState<number | null>(null);
+  const [voiceoverError, setVoiceoverError] = useState<VoiceoverSkip | null>(null);
 
   useEffect(() => {
     if (open) loadExportOptions().then(setOptions);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    let active = true;
+    localStorage.get([...VOICEOVER_SETTINGS]).then((stored) => {
+      if (active) setVoiceoverReady(hasVoiceoverKey(stored));
+    });
+    return () => {
+      active = false;
+    };
   }, [open]);
 
   useEffect(() => {
@@ -70,6 +103,9 @@ export default function ExportPreviewModal({ open, onOpenChange, guide, steps, s
   const videoPending = steps.length > VIDEO_AUTOPLAY_STEP_LIMIT && !videoRequested;
   const typedStepCount = steps.filter((step) => step.inputValue && screenshots.has(step.id)).length;
   const { cover, stepDescriptions, resolution, screenshots: withScreenshots, stepUrls, imageScale } = options;
+  const voiceover = options.voiceover && voiceoverReady;
+  const voiceShare = voiceover ? VOICE_PROGRESS_SHARE : 0;
+  const muxShare = voiceover ? MUX_PROGRESS_SHARE : 0;
 
   const previewOptions = useMemo<ExportOptions>(
     () => ({ ...DEFAULT_EXPORT_OPTIONS, cover, screenshots: withScreenshots, stepUrls, imageScale, stepDescriptions }),
@@ -102,24 +138,54 @@ export default function ExportPreviewModal({ open, onOpenChange, guide, steps, s
     let url: string | null = null;
     setVideoError(null);
     setVideoProgress(0);
+    setVoiceProgress(null);
+    setNarratedSeconds(null);
+    setVoiceoverError(null);
     const timer = setTimeout(async () => {
+      let allClipsLanded = false;
       try {
         const { exportGuideAsVideo } = await import('@/core/export/video-export');
-        const { blob, chapters } = await exportGuideAsVideo(
+        const {
+          blob,
+          chapters,
+          extension,
+          voiceoverError: failed,
+        } = await exportGuideAsVideo(
           guide,
           steps,
           screenshots,
-          { cover, stepDescriptions, resolution },
+          { cover, stepDescriptions, resolution, voiceover },
           {
             signal: controller.signal,
             onProgress: (encoded, frames) => {
-              if (!controller.signal.aborted) setVideoProgress(frames > 0 ? encoded / frames : 0);
+              if (controller.signal.aborted) return;
+              setVoiceProgress(null);
+              setVideoProgress(
+                encodeProgress(encoded, frames, allClipsLanded ? voiceShare : 0, allClipsLanded ? muxShare : 0),
+              );
+            },
+            onVoiceProgress: (done, total) => {
+              if (controller.signal.aborted) return;
+              allClipsLanded = done === total;
+              setVoiceProgress(done < total ? { done, total } : null);
+              setVideoProgress(narrateProgress(done, total, voiceShare));
+            },
+            onMuxProgress: (done, total) => {
+              if (controller.signal.aborted) return;
+              setVideoProgress(muxProgress(done, total, muxShare));
             },
           },
         );
         if (controller.signal.aborted) return;
         url = URL.createObjectURL(blob);
+        setVideoType(extension === 'webm' ? 'video/webm' : 'video/mp4');
         setVideoChapters(chapters);
+        setVoiceoverError(failed ?? null);
+        setNarratedSeconds(
+          voiceover && !failed && chapters.length > 0
+            ? chapters[chapters.length - 1].end + (cover ? COVER_SECONDS : 0)
+            : null,
+        );
         setVideoUrl(url);
       } catch (error) {
         if (controller.signal.aborted || (error instanceof DOMException && error.name === 'AbortError')) return;
@@ -132,7 +198,20 @@ export default function ExportPreviewModal({ open, onOpenChange, guide, steps, s
       if (url) URL.revokeObjectURL(url);
       setVideoUrl(null);
     };
-  }, [open, mode, guide, steps, screenshots, cover, stepDescriptions, resolution, videoPending]);
+  }, [
+    open,
+    mode,
+    guide,
+    steps,
+    screenshots,
+    cover,
+    stepDescriptions,
+    resolution,
+    voiceover,
+    voiceShare,
+    muxShare,
+    videoPending,
+  ]);
 
   const update = (patch: Partial<ExportOptions>) => {
     const next = { ...options, ...patch };
@@ -166,10 +245,30 @@ export default function ExportPreviewModal({ open, onOpenChange, guide, steps, s
         downloadAbort.current = controller;
         setDownloadProgress(0);
         const { exportGuideAsVideo } = await import('@/core/export/video-export');
-        const { blob, extension } = await exportGuideAsVideo(guide, steps, screenshots, options, {
-          signal: controller.signal,
-          onProgress: (encoded, frames) => setDownloadProgress(frames > 0 ? encoded / frames : 0),
-        });
+        let allClipsLanded = false;
+        const {
+          blob,
+          extension,
+          voiceoverError: failed,
+        } = await exportGuideAsVideo(
+          guide,
+          steps,
+          screenshots,
+          { ...options, voiceover },
+          {
+            signal: controller.signal,
+            onProgress: (encoded, frames) =>
+              setDownloadProgress(
+                encodeProgress(encoded, frames, allClipsLanded ? voiceShare : 0, allClipsLanded ? muxShare : 0),
+              ),
+            onVoiceProgress: (done, total) => {
+              allClipsLanded = done === total;
+              setDownloadProgress(narrateProgress(done, total, voiceShare));
+            },
+            onMuxProgress: (done, total) => setDownloadProgress(muxProgress(done, total, muxShare)),
+          },
+        );
+        setVoiceoverError(failed ?? null);
         downloadBlob(blob, safeFilename(guide.title, extension));
       } else if (format === 'bundle') {
         const { exportGuideAsBundle } = await import('@/core/transfer/bundle');
@@ -294,6 +393,55 @@ export default function ExportPreviewModal({ open, onOpenChange, guide, steps, s
                     </button>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {videoSupported && (
+              <div className="pt-3 border-t border-border">
+                <div className="text-[12px] font-semibold text-foreground mb-2">{i18n.t('exportPreview.audio')}</div>
+                <div className="flex gap-1.5">
+                  <button
+                    type="button"
+                    aria-pressed={!voiceover}
+                    onClick={() => update({ voiceover: false })}
+                    className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg border text-[11px] leading-none transition-colors ${
+                      voiceover
+                        ? 'border-border text-muted-foreground hover:border-accent hover:text-foreground'
+                        : 'border-accent text-accent'
+                    }`}
+                  >
+                    <span className="leading-none">{i18n.t('exportPreview.audioSilent')}</span>
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={voiceover}
+                    disabled={!voiceoverReady}
+                    onClick={() => update({ voiceover: true })}
+                    className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg border text-[11px] leading-none transition-colors disabled:opacity-45 disabled:cursor-not-allowed disabled:hover:border-border disabled:hover:text-muted-foreground ${
+                      voiceover
+                        ? 'border-accent text-accent'
+                        : 'border-border text-muted-foreground hover:border-accent hover:text-foreground'
+                    }`}
+                  >
+                    <span className="leading-none">{i18n.t('exportPreview.audioNarrated')}</span>
+                    <Volume2 size={11} className="shrink-0 block" />
+                  </button>
+                </div>
+
+                {!voiceoverReady && (
+                  <div className="mt-1.5 px-0.5 text-[10px] text-muted-foreground leading-snug">
+                    {i18n.t('exportPreview.voiceoverNoKey')}
+                  </div>
+                )}
+
+                {voiceover && voiceoverError && (
+                  <div
+                    className="mt-1.5 rounded-lg px-2.5 py-2 text-[10px] leading-snug text-destructive bg-destructive/10"
+                    role="alert"
+                  >
+                    {i18n.t(VOICEOVER_SKIP_MESSAGES[voiceoverError.reason])}
+                  </div>
+                )}
               </div>
             )}
 
@@ -477,11 +625,24 @@ export default function ExportPreviewModal({ open, onOpenChange, guide, steps, s
                     </div>
                   ) : videoUrl ? (
                     <Suspense fallback={null}>
-                      <VideoStepPlayer key={videoUrl} src={videoUrl} chapters={videoChapters} />
+                      <VideoStepPlayer
+                        key={videoUrl}
+                        src={videoUrl}
+                        type={videoType}
+                        chapters={videoChapters}
+                        narrated={voiceover && !voiceoverError}
+                      />
                     </Suspense>
                   ) : (
                     <div className="flex flex-col items-center gap-2 bg-card border border-border rounded-xl px-4 py-3">
-                      <div className="text-[11px] text-muted-foreground">{i18n.t('exportPreview.encodingVideo')}</div>
+                      <div className="text-[11px] text-muted-foreground">
+                        {voiceProgress
+                          ? i18n.t('exportPreview.narrating', [
+                              String(voiceProgress.done + 1),
+                              String(voiceProgress.total),
+                            ])
+                          : i18n.t('exportPreview.encodingVideo')}
+                      </div>
                       <div className="h-1.5 w-40 overflow-hidden rounded-full bg-border">
                         <div
                           className="h-full rounded-full bg-accent transition-[width] duration-150"

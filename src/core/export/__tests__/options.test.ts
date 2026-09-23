@@ -32,6 +32,7 @@ describe('normaliseExportOptions', () => {
       gifQuality: DEFAULT_EXPORT_OPTIONS.gifQuality,
       bundleStripInputs: DEFAULT_EXPORT_OPTIONS.bundleStripInputs,
       bundleUrls: DEFAULT_EXPORT_OPTIONS.bundleUrls,
+      voiceover: DEFAULT_EXPORT_OPTIONS.voiceover,
     });
   });
 

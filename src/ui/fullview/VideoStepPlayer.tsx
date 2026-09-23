@@ -2,11 +2,12 @@ import {
   FullscreenButton,
   MediaPlayer,
   MediaProvider,
+  MuteButton,
   PlayButton,
   useMediaRemote,
   useMediaState,
 } from '@vidstack/react';
-import { ChevronLeft, ChevronRight, Maximize, Minimize, Pause, Play } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Maximize, Minimize, Pause, Play, Volume2, VolumeX } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { i18n } from '#imports';
 import type { StepKind, VideoChapter } from '@/core/export/video-export';
@@ -24,7 +25,9 @@ const KIND_DOT: Record<StepKind, string> = {
 
 interface VideoStepPlayerProps {
   src: string;
+  type: 'video/mp4' | 'video/webm';
   chapters: VideoChapter[];
+  narrated?: boolean;
 }
 
 function formatClock(seconds: number): string {
@@ -39,13 +42,33 @@ function activeIndex(chapters: VideoChapter[], time: number): number {
   return -1;
 }
 
+const WAVE_BARS = [3, 7, 4, 8, 5];
+
+function SpokenMark({ talking }: { talking: boolean }) {
+  return (
+    <span role="img" aria-label={i18n.t('videoPlayer.spoken')} className="mt-1 flex shrink-0 items-center gap-[2px]">
+      {WAVE_BARS.map((height, i) => (
+        <span
+          key={height}
+          className={`w-[2px] rounded-[1px] ${talking ? 'animate-talk bg-lavender' : 'bg-lavender/70'}`}
+          style={{ height: `${height}px`, animationDelay: talking ? `${i * 90}ms` : undefined }}
+        />
+      ))}
+    </span>
+  );
+}
+
 function StepList({
   chapters,
   index,
+  narrated,
+  playing,
   onJump,
 }: {
   chapters: VideoChapter[];
   index: number;
+  narrated: boolean;
+  playing: boolean;
   onJump: (n: number) => void;
 }) {
   const list = useRef<HTMLElement>(null);
@@ -70,6 +93,7 @@ function StepList({
         >
           <span className={`mt-1.5 size-1.5 shrink-0 rounded-full ${KIND_DOT[chapter.kind]}`} />
           <span className="min-w-0 flex-1 text-[10.5px] leading-snug text-white/80">{chapter.title}</span>
+          {narrated && chapter.spoken && <SpokenMark talking={playing && i === index} />}
           <span className="pt-0.5 font-mono text-[9px] tabular-nums text-white/40">{formatClock(chapter.start)}</span>
         </button>
       ))}
@@ -77,13 +101,14 @@ function StepList({
   );
 }
 
-function PlayerBody({ chapters }: { chapters: VideoChapter[] }) {
+function PlayerBody({ chapters, narrated }: { chapters: VideoChapter[]; narrated: boolean }) {
   const remote = useMediaRemote();
   const time = useMediaState('currentTime');
   const duration = useMediaState('duration');
   const rate = useMediaState('playbackRate');
   const paused = useMediaState('paused');
   const fullscreen = useMediaState('fullscreen');
+  const muted = useMediaState('muted');
 
   const index = activeIndex(chapters, time);
   const seekTo = (seconds: number) => remote.seek(Math.max(0, seconds + 0.01));
@@ -133,23 +158,32 @@ function PlayerBody({ chapters }: { chapters: VideoChapter[] }) {
             {rate}x
           </button>
 
+          <MuteButton
+            className="rounded-md p-1 hover:bg-white/15"
+            aria-label={muted ? i18n.t('videoPlayer.unmute') : i18n.t('videoPlayer.mute')}
+          >
+            {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+          </MuteButton>
+
           <FullscreenButton className="rounded-md p-1 hover:bg-white/15">
             {fullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
           </FullscreenButton>
         </div>
       </div>
 
-      {chapters.length > 0 && <StepList chapters={chapters} index={index} onJump={jump} />}
+      {chapters.length > 0 && (
+        <StepList chapters={chapters} index={index} narrated={narrated} playing={!paused} onJump={jump} />
+      )}
     </>
   );
 }
 
-export default function VideoStepPlayer({ src, chapters }: VideoStepPlayerProps) {
+export default function VideoStepPlayer({ src, type, chapters, narrated = false }: VideoStepPlayerProps) {
   return (
     <MediaPlayer
-      src={{ src, type: 'video/mp4' }}
-      autoPlay
-      muted
+      src={{ src, type }}
+      autoPlay={!narrated}
+      muted={!narrated}
       playsInline
       load="eager"
       viewType="video"
@@ -157,7 +191,7 @@ export default function VideoStepPlayer({ src, chapters }: VideoStepPlayerProps)
       className="flex size-full"
       style={{ backgroundColor: FRAME_FILL }}
     >
-      <PlayerBody chapters={chapters} />
+      <PlayerBody chapters={chapters} narrated={narrated} />
     </MediaPlayer>
   );
 }
