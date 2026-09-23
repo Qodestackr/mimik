@@ -97,7 +97,6 @@ describe('duplicateGuide', () => {
     expect(copy?.guide.stepIds).toEqual(copy?.steps.map((s) => s.id));
     expect(copy?.steps.every((s) => s.guideId === copyId)).toBe(true);
 
-    // Each copied step points at a screenshot of its own, not the source's.
     const copiedIds = copy?.steps.map((s) => s.screenshotId);
     expect(copiedIds).not.toContain('sc1');
     expect(copiedIds).not.toContain('sc2');
@@ -156,7 +155,6 @@ describe('duplicateGuide', () => {
     const copyId = await duplicateGuide('g1');
 
     expect(await db.transcripts.where('guideId').equals(copyId!).count()).toBe(0);
-    // The spoken original still rides along on the step itself.
     const copy = await getGuide(copyId!);
     expect(copy?.steps[0].narratedDescription).toBe('what I said');
   });
@@ -165,7 +163,6 @@ describe('duplicateGuide', () => {
     await seedGuide('g1', { stepIds: ['s1'] });
     await db.steps.add(makeStep({ id: 's1', guideId: 'g1', screenshotId: 'sc1' }));
     await db.screenshots.add(makeScreenshot({ id: 'sc1', stepId: 's1' }));
-    // Leaves the superseded 'sc1' row behind for version history to revert to.
     await replaceScreenshot('s1', new Blob(['new'], { type: 'image/png' }), { width: 10, height: 10 });
     expect(await db.screenshots.where('stepId').equals('s1').count()).toBe(2);
 
@@ -184,6 +181,31 @@ describe('duplicateGuide', () => {
     expect(copy?.starred).toBe(false);
     expect(copy?.deletedAt).toBeNull();
     expect(copy?.staging).toBeUndefined();
+  });
+
+  it('clears the pending-AI flag, which nothing would ever resolve on the copy', async () => {
+    await seedGuide('g1', { stepIds: ['s1'] });
+    await db.steps.add(makeStep({ id: 's1', guideId: 'g1', aiPending: true }));
+
+    const copyId = await duplicateGuide('g1');
+    const copy = await getGuide(copyId!);
+
+    expect(copy?.steps[0].aiPending).toBeUndefined();
+    expect((await db.steps.get('s1'))?.aiPending).toBe(true);
+  });
+
+  it('drops a screenshot row that names no step of this guide rather than copying it unkeyed', async () => {
+    await seedGuide('g1', { stepIds: ['s1'] });
+    await db.steps.add(makeStep({ id: 's1', guideId: 'g1', screenshotId: 'sc1' }));
+    await db.screenshots.add(makeScreenshot({ id: 'sc1', stepId: 'gone' }));
+
+    const copyId = await duplicateGuide('g1');
+    const copy = await getGuide(copyId!);
+
+    expect(copy?.steps).toHaveLength(1);
+    expect(copy?.steps[0].screenshotId).toBeUndefined();
+    expect(copy?.screenshots.size).toBe(0);
+    expect(await db.screenshots.count()).toBe(1);
   });
 
   it('announces the new guide on the guides channel', async () => {
