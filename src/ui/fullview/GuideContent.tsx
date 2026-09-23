@@ -14,7 +14,7 @@ import {
   updateStepDescription,
 } from '@/core/guides/service';
 import type { SnapshotLike } from '@/core/guides/snapshot-diff';
-import { MAX_TITLE_LENGTH, sanitizeGuideTitle, stripTitleLineBreaks } from '@/core/guides/title';
+import { sanitizeGuideTitle, stripTitleLineBreaks } from '@/core/guides/title';
 import type { Guide, Screenshot, Snapshot, Step } from '@/core/guides/types';
 import type { ScreenshotEdits } from '@/core/screenshot/types';
 import { localStorage, openSidebar } from '@/lib/browser-api';
@@ -363,7 +363,6 @@ export default function GuideContent({ guideId, initialStepId, initialTool }: Gu
                 }}
                 value={title}
                 rows={1}
-                maxLength={Math.max(MAX_TITLE_LENGTH, title.length)}
                 onChange={(e) => {
                   const next = stripTitleLineBreaks(e.target.value);
                   setTitle(next);
