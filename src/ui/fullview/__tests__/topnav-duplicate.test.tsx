@@ -139,6 +139,20 @@ describe('TopNav duplicate', () => {
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
+  it('does not bring the message back when you return to the guide that failed', async () => {
+    duplicateGuide.mockRejectedValue(new Error('boom'));
+    const { rerender } = render(<TopNav route={route} />);
+
+    fireEvent.click(duplicateButton());
+    await settleMicrotasks();
+    expect(screen.getByRole('alert')).toBeTruthy();
+
+    rerender(<TopNav route={{ page: 'library', category: 'all' } as const} />);
+    rerender(<TopNav route={route} />);
+
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
   it('clears the message when a later attempt succeeds', async () => {
     duplicateGuide.mockRejectedValueOnce(new Error('boom'));
     render(<TopNav route={route} />);

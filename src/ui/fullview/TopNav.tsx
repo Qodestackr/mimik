@@ -68,10 +68,17 @@ export default function TopNav({ route }: TopNavProps) {
   }));
   const [exportOpen, setExportOpen] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
-  const [duplicateFailedOnRoute, setDuplicateFailedOnRoute] = useState<string | null>(null);
   const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const routeKey = route.page === 'guide' ? `guide/${route.guideId}` : `library/${route.category}`;
+  const [duplicateFailedOnRoute, setDuplicateFailedOnRoute] = useState<string | null>(null);
+  const [previousRoute, setPreviousRoute] = useState(routeKey);
+
+  if (previousRoute !== routeKey) {
+    setPreviousRoute(routeKey);
+    setDuplicateFailedOnRoute(null);
+  }
+
   const duplicateFailed = duplicateFailedOnRoute === routeKey;
 
   useEffect(() => () => clearTimeout(settleTimer.current ?? undefined), []);
