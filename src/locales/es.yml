@@ -99,6 +99,7 @@ settings:
   apiKey: Clave API
   showKey: Mostrar clave
   hideKey: Ocultar clave
+  clearKey: Borrar clave
   aiLanguage: Idioma de descripciones
   voiceNarration: "Narración por voz"
   voiceUsingAiKey: "No hay clave de voz, así que Mimik usa la clave de OpenAI de Descripciones con IA de arriba."

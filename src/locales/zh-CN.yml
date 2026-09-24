@@ -99,6 +99,7 @@ settings:
   apiKey: API 密钥
   showKey: 显示密钥
   hideKey: 隐藏密钥
+  clearKey: 清除密钥
   aiLanguage: 描述语言
   voiceNarration: 语音讲解
   voiceUsingAiKey: "未设置语音密钥，因此 Mimik 会使用上方 AI 描述中的 OpenAI 密钥。"

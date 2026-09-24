@@ -111,6 +111,7 @@ settings:
   apiKey: API-Schlüssel
   showKey: Schlüssel anzeigen
   hideKey: Schlüssel verbergen
+  clearKey: Schlüssel löschen
   aiLanguage: Sprache der Beschreibungen
   voiceNarration: Sprachkommentar
   voiceUsingAiKey: "Es ist kein Sprach-Schlüssel gesetzt, daher nutzt Mimik den OpenAI-Schlüssel aus den KI-Beschreibungen oben."
