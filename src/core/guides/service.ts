@@ -211,6 +211,55 @@ export async function createStep(step: Step): Promise<void> {
   await db.steps.add(step);
 }
 
+export async function duplicateGuide(guideId: string): Promise<string | null> {
+  const copyId = await db.transaction('rw', db.guides, db.steps, db.screenshots, async () => {
+    const guide = await db.guides.get(guideId);
+    if (!guide) return null;
+    const steps = await db.steps.where('guideId').equals(guideId).sortBy('index');
+    const currentScreenshotIds = steps.map((step) => step.screenshotId).filter((id): id is string => !!id);
+
+    const newGuideId = crypto.randomUUID();
+    const stepIdMap = new Map(steps.map((step) => [step.id, crypto.randomUUID()]));
+    const screenshotsBelongingToTheseSteps = (
+      await db.screenshots.where('id').anyOf(currentScreenshotIds).toArray()
+    ).filter((row) => stepIdMap.has(row.stepId));
+    const screenshotIdMap = new Map(screenshotsBelongingToTheseSteps.map((row) => [row.id, crypto.randomUUID()]));
+    const now = Date.now();
+
+    const { staging: _staging, ...rest } = guide;
+    await db.guides.add({
+      ...rest,
+      id: newGuideId,
+      title: i18n.t('library.copyOfTitle', [guide.title]),
+      createdAt: now,
+      updatedAt: now,
+      stepIds: steps.map((step) => stepIdMap.get(step.id)!),
+      starred: false,
+      deletedAt: null,
+    });
+    await db.steps.bulkAdd(
+      steps.map((step, index) => ({
+        ...step,
+        id: stepIdMap.get(step.id)!,
+        guideId: newGuideId,
+        index,
+        aiPending: undefined,
+        screenshotId: step.screenshotId ? screenshotIdMap.get(step.screenshotId) : undefined,
+      })),
+    );
+    await db.screenshots.bulkAdd(
+      screenshotsBelongingToTheseSteps.map((row) => ({
+        ...row,
+        id: screenshotIdMap.get(row.id)!,
+        stepId: stepIdMap.get(row.stepId)!,
+      })),
+    );
+    return newGuideId;
+  });
+  if (copyId) notifyGuidesChanged({ type: 'mutated' });
+  return copyId;
+}
+
 export async function mergeGuideInto(sourceGuideId: string, targetGuideId: string, atIndex: number): Promise<number> {
   const moved = await db.transaction('rw', db.steps, db.guides, db.transcripts, db.guideMerges, async () => {
     const incoming = await db.steps.where('guideId').equals(sourceGuideId).sortBy('index');

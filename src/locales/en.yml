@@ -46,6 +46,9 @@ library:
   openInFullView: Open in full view
   openDashboard: "Open dashboard"
   openDashboardHint: "Browse, import and export guides there"
+  duplicate: Duplicate
+  copyOfTitle: "Copy of $1"
+  duplicateFailed: Could not duplicate this guide
 
 guideme:
   live: Live

@@ -46,6 +46,9 @@ library:
   openInFullView: In der Vollansicht öffnen
   openDashboard: "Dashboard öffnen"
   openDashboardHint: "Dort kannst du Anleitungen ansehen, importieren und exportieren"
+  duplicate: Duplizieren
+  copyOfTitle: "Kopie von $1"
+  duplicateFailed: Diese Anleitung konnte nicht dupliziert werden
 
 guideme:
   manualStep: "Dieser Schritt wurde bearbeitet und kann nicht automatisch erkannt werden. Nutze Weiter, wenn du fertig bist."
