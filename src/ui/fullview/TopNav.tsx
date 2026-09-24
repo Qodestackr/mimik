@@ -1,4 +1,15 @@
-import { Check, ChevronRight, Download, FileText, History, Pencil, Search, Star, Trash2 } from 'lucide-react';
+import {
+  Check,
+  ChevronRight,
+  Download,
+  FileText,
+  History,
+  MessageSquareQuote,
+  Pencil,
+  Search,
+  Star,
+  Trash2,
+} from 'lucide-react';
 import { useState } from 'react';
 import { i18n } from '#imports';
 import { createSnapshot } from '@/core/guides/service';
@@ -34,6 +45,9 @@ export default function TopNav({ route }: TopNavProps) {
     historyOpen,
     setHistoryOpen,
     bumpHistoryRefresh,
+    transcriptOpen,
+    setTranscriptOpen,
+    hasTranscript,
   } = useFullview((s) => ({
     counts: s.counts,
     guideTitle: s.guideTitle,
@@ -45,6 +59,9 @@ export default function TopNav({ route }: TopNavProps) {
     historyOpen: s.historyOpen,
     setHistoryOpen: s.setHistoryOpen,
     bumpHistoryRefresh: s.bumpHistoryRefresh,
+    transcriptOpen: s.transcriptOpen,
+    setTranscriptOpen: s.setTranscriptOpen,
+    hasTranscript: s.hasTranscript,
   }));
   const [exportOpen, setExportOpen] = useState(false);
 
@@ -140,6 +157,17 @@ export default function TopNav({ route }: TopNavProps) {
               <History size={14} />
               {i18n.t('editor.versionHistory')}
             </Button>
+            {hasTranscript && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setTranscriptOpen(!transcriptOpen)}
+                className={NAV_CONTROL}
+              >
+                <MessageSquareQuote size={14} />
+                {i18n.t('transcript.title')}
+              </Button>
+            )}
             {!editing && (
               <Button size="sm" onClick={() => setExportOpen(true)} className="h-8 rounded-lg">
                 <Download size={14} />

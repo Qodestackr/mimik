@@ -242,6 +242,7 @@ editor:
   rewriteErrorNoApiKey: Adicione uma chave de API de IA nos ajustes para reescrever textos.
   rewriteErrorFailed: "N\xE3o foi poss\xEDvel reescrever a sele\xE7\xE3o. Tente novamente."
   rewriteErrorStale: O texto mudou. Selecione-o novamente.
+  restoreSpoken: Restaurar o que você falou
 
 capture:
   recordSteps: Gravar etapas
@@ -617,3 +618,19 @@ import:
   errorVersion: "Este arquivo foi criado em uma versão mais nova do Mimik. Atualize o Mimik e tente de novo."
   errorEmpty: "Este arquivo não tem nenhuma etapa."
   errorFailed: "Não foi possível salvar o guia na sua biblioteca. Tente importar novamente."
+transcript:
+  title: Transcrição
+  empty: Nada foi narrado nesta gravação.
+  loadError: Não foi possível carregar a transcrição. Tente novamente.
+  filterAll: "Tudo ($1)"
+  filterUnused: "Não usado ($1)"
+  privacyNote: Tudo o que você falou durante a gravação, guardado só neste dispositivo. Nunca faz parte de um guia exportado e é apagado junto com o guia.
+  usedInStep: "Passo $1"
+  readOnlyHint: Ativa Editar na barra de cima pra adicionar essas falas a um passo.
+  notUsed: Não usado
+  filteredOut: Filtrado
+  addToStep: "Adicionar ao passo $1"
+  copyAll: Copiar tudo
+  download: Baixar
+  delete: Apagar transcrição
+  confirmDelete: Apagar esta transcrição? O que você falou será perdido para sempre.

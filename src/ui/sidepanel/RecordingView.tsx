@@ -222,11 +222,11 @@ export default function RecordingView({ guideId, onStop, voice, aiFailure, pause
       {/* Bottom bar */}
       <div className="shrink-0 border-t border-border">
         <AiStatus update={aiFailure} />
-        {import.meta.env.BROWSER !== 'firefox' && <VoiceStatus update={voice} enabled={voiceEnabled} />}
-        <div className="px-4 py-2.5 flex items-center gap-2">
-          <Button onClick={onStop} className="flex-1 h-10 rounded-full font-semibold text-[13px]">
+        {import.meta.env.BROWSER !== 'firefox' && <VoiceStatus update={voice} enabled={voiceEnabled} paused={paused} />}
+        <div className="px-4 py-2.5 flex items-center gap-1.5">
+          <Button onClick={onStop} className="flex-1 min-w-0 h-9 rounded-full font-semibold text-[13px]">
             <Check size={16} strokeWidth={3} />
-            {i18n.t('recording.finishRecording')}
+            <span className="truncate">{i18n.t('recording.finishRecording')}</span>
           </Button>
           {import.meta.env.BROWSER !== 'firefox' && (
             <MicToggle
@@ -242,7 +242,7 @@ export default function RecordingView({ guideId, onStop, voice, aiFailure, pause
                 <button
                   onClick={handleBlur}
                   disabled={paused}
-                  className="w-10 h-10 rounded-full border border-border flex items-center justify-center transition-colors text-muted-foreground hover:border-accent hover:text-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-9 h-9 shrink-0 rounded-full border border-border flex items-center justify-center transition-colors text-muted-foreground hover:border-accent hover:text-accent disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <EyeOff size={16} />
                 </button>
@@ -254,7 +254,7 @@ export default function RecordingView({ guideId, onStop, voice, aiFailure, pause
             <TooltipTrigger asChild>
               <button
                 onClick={paused ? handleResume : handlePause}
-                className={`w-10 h-10 shrink-0 rounded-full border flex items-center justify-center transition-colors ${
+                className={`w-9 h-9 shrink-0 rounded-full border flex items-center justify-center transition-colors ${
                   paused
                     ? 'border-accent text-accent hover:bg-secondary'
                     : 'border-border text-muted-foreground hover:border-accent hover:text-accent'
@@ -269,7 +269,7 @@ export default function RecordingView({ guideId, onStop, voice, aiFailure, pause
             <TooltipTrigger asChild>
               <button
                 onClick={onStop}
-                className="w-10 h-10 shrink-0 rounded-full border border-border flex items-center justify-center transition-colors text-purple hover:border-destructive/30 hover:text-destructive"
+                className="w-9 h-9 shrink-0 rounded-full border border-border flex items-center justify-center transition-colors text-purple hover:border-destructive/30 hover:text-destructive"
               >
                 <X size={16} />
               </button>

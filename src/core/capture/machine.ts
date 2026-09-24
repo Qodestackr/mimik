@@ -13,7 +13,7 @@ export type PauseReason = 'blur' | 'manual';
 type CaptureEvent =
   | { type: 'START_RECORDING'; url?: string; insertTargetGuideId?: string; insertAtIndex?: number }
   | { type: 'STOP_RECORDING' }
-  | { type: 'PAUSE_CAPTURE'; reason: PauseReason }
+  | { type: 'PAUSE_CAPTURE'; reason: PauseReason; narrationWasLive?: boolean }
   | { type: 'RESUME_CAPTURE' }
   | { type: 'USER_ACTION' }
   | { type: 'URL_CHANGED'; url: string };
@@ -25,6 +25,7 @@ interface CaptureContext {
   insertTargetGuideId: string | null;
   insertAtIndex: number | null;
   pauseReason: PauseReason | null;
+  narrationWasLive: boolean;
 }
 
 const IDLE_CONTEXT: CaptureContext = {
@@ -34,6 +35,7 @@ const IDLE_CONTEXT: CaptureContext = {
   insertTargetGuideId: null,
   insertAtIndex: null,
   pauseReason: null,
+  narrationWasLive: false,
 };
 
 export const captureMachine = createMachine({
@@ -56,6 +58,7 @@ export const captureMachine = createMachine({
             insertTargetGuideId: ({ event }) => event.insertTargetGuideId ?? null,
             insertAtIndex: ({ event }) => event.insertAtIndex ?? null,
             pauseReason: null,
+            narrationWasLive: false,
           }),
         },
       },
@@ -70,6 +73,7 @@ export const captureMachine = createMachine({
           target: CaptureState.PAUSED,
           actions: assign({
             pauseReason: ({ event }) => event.reason,
+            narrationWasLive: ({ event }) => event.narrationWasLive === true,
           }),
         },
         USER_ACTION: {
@@ -88,7 +92,7 @@ export const captureMachine = createMachine({
       on: {
         RESUME_CAPTURE: {
           target: CaptureState.RECORDING,
-          actions: assign({ pauseReason: null }),
+          actions: assign({ pauseReason: null, narrationWasLive: false }),
         },
         STOP_RECORDING: {
           target: CaptureState.IDLE,

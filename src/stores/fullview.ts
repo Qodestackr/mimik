@@ -41,6 +41,10 @@ interface FullviewStore {
   setHistoryOpen: (open: boolean) => void;
   historyRefreshKey: number;
   bumpHistoryRefresh: () => void;
+  transcriptOpen: boolean;
+  setTranscriptOpen: (open: boolean) => void;
+  hasTranscript: boolean;
+  setHasTranscript: (has: boolean) => void;
 }
 
 function flushFocusedField() {
@@ -72,7 +76,14 @@ export const useFullviewStore = create<FullviewStore>((set) => ({
     set((s) =>
       s.guideExportData?.guideId === guideExportData?.guideId
         ? { guideExportData }
-        : { guideExportData, editing: false, historyOpen: false, historyRefreshKey: 0 },
+        : {
+            guideExportData,
+            editing: false,
+            historyOpen: false,
+            historyRefreshKey: 0,
+            transcriptOpen: false,
+            hasTranscript: false,
+          },
     ),
   scrollToStepId: null,
   scrollToStep: (stepId) => {
@@ -90,10 +101,17 @@ export const useFullviewStore = create<FullviewStore>((set) => ({
   historyOpen: false,
   setHistoryOpen: (historyOpen) => {
     if (historyOpen) flushFocusedField();
-    set({ historyOpen });
+    set(historyOpen ? { historyOpen, transcriptOpen: false } : { historyOpen });
   },
   historyRefreshKey: 0,
   bumpHistoryRefresh: () => set((s) => ({ historyRefreshKey: s.historyRefreshKey + 1 })),
+  transcriptOpen: false,
+  setTranscriptOpen: (transcriptOpen) => {
+    if (transcriptOpen) flushFocusedField();
+    set(transcriptOpen ? { transcriptOpen, historyOpen: false } : { transcriptOpen });
+  },
+  hasTranscript: false,
+  setHasTranscript: (hasTranscript) => set({ hasTranscript }),
 }));
 
 export function useFullview<T>(selector: (s: FullviewStore) => T): T {

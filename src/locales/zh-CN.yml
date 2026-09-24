@@ -242,6 +242,7 @@ editor:
   rewriteErrorNoApiKey: 请在设置中添加 AI API 密钥以改写文本。
   rewriteErrorFailed: 无法改写选中文本。请重试。
   rewriteErrorStale: 文本已变化。请重新选择。
+  restoreSpoken: 恢复你说过的内容
 
 capture:
   recordSteps: 录制步骤
@@ -617,3 +618,19 @@ import:
   errorVersion: "这个文件来自更新版本的 Mimik。请更新 Mimik 后重试。"
   errorEmpty: "这个文件里没有任何步骤。"
   errorFailed: "无法把这个指南保存到你的库。请重新导入试试。"
+transcript:
+  title: 语音记录
+  empty: 此次录制没有语音旁白。
+  loadError: 无法加载语音记录，请重试。
+  filterAll: "全部 ($1)"
+  filterUnused: "未使用 ($1)"
+  privacyNote: 录制时你说过的全部内容，仅保存在本设备上。它不会出现在导出的指南里，并会随指南一起删除。
+  usedInStep: "步骤 $1"
+  readOnlyHint: 在顶部打开「编辑」，即可把这些语句加到某个步骤上。
+  notUsed: 未使用
+  filteredOut: 已过滤
+  addToStep: "添加到步骤 $1"
+  copyAll: 全部复制
+  download: 下载
+  delete: 删除语音记录
+  confirmDelete: 删除这份语音记录？你说过的内容将永久丢失。

@@ -242,6 +242,7 @@ editor:
   rewriteErrorNoApiKey: "A\xF1ade una clave de API de IA en los ajustes para reescribir texto."
   rewriteErrorFailed: "No se pudo reescribir la selecci\xF3n. Int\xE9ntalo de nuevo."
   rewriteErrorStale: "El texto cambi\xF3. Vuelve a seleccionarlo."
+  restoreSpoken: Restaurar lo que dijiste
 
 capture:
   recordSteps: Grabar pasos
@@ -617,3 +618,19 @@ import:
   errorVersion: "Este archivo se creó con una versión más reciente de Mimik. Actualiza Mimik e inténtalo de nuevo."
   errorEmpty: "Este archivo no tiene ningún paso."
   errorFailed: "No se pudo guardar la guía en tu biblioteca. Intenta importarla de nuevo."
+transcript:
+  title: Transcripción
+  empty: No se narró nada en esta grabación.
+  loadError: No se pudo cargar la transcripción. Inténtalo de nuevo.
+  filterAll: "Todo ($1)"
+  filterUnused: "Sin usar ($1)"
+  privacyNote: Todo lo que dijiste al grabar, guardado solo en este dispositivo. Nunca forma parte de una guía exportada y se elimina con la guía.
+  usedInStep: "Paso $1"
+  readOnlyHint: Activa Editar en la barra superior para añadir estas líneas a un paso.
+  notUsed: Sin usar
+  filteredOut: Descartado
+  addToStep: "Añadir al paso $1"
+  copyAll: Copiar todo
+  download: Descargar
+  delete: Eliminar transcripción
+  confirmDelete: ¿Eliminar esta transcripción? Lo que dijiste se perderá para siempre.

@@ -23,6 +23,7 @@ export interface VoiceRecording {
 
 export const EMPTY_NARRATION: NarrationResult = {
   descriptions: [],
+  transcript: { epochMs: 0, lines: [] },
   stats: {
     batches: 0,
     failedBatches: 0,
@@ -55,6 +56,7 @@ export async function narrateRecording(
       pcm: recording.pcm,
       sampleRate: recording.sampleRate,
       steps: buildStepWindows(steps, recording.audioEpochMs, recording.durationSeconds),
+      audioEpochMs: recording.audioEpochMs,
       detectSpeech: detectSpeechByEnergy,
       transcribe: createTranscriber(settings),
     });
