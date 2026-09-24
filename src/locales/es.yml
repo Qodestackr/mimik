@@ -46,6 +46,9 @@ library:
   openInFullView: Abrir en vista completa
   openDashboard: "Abrir panel"
   openDashboardHint: "Consulta, importa y exporta guías allí"
+  duplicate: Duplicar
+  copyOfTitle: "Copia de $1"
+  duplicateFailed: No se pudo duplicar esta guía
 
 guideme:
   live: En vivo
@@ -100,6 +103,14 @@ settings:
   showKey: Mostrar clave
   hideKey: Ocultar clave
   aiLanguage: Idioma de descripciones
+  voiceover: "Voz en off del vídeo"
+  textToSpeech: "texto → voz"
+  voiceoverHint: "Mimik lee el texto de cada paso sobre el vídeo exportado."
+  voiceoverUsingAiKey: "No hay clave de voz en off, así que Mimik usa la clave de OpenAI de Descripciones con IA."
+  voiceoverNoKey: "No hay ninguna clave de API configurada, así que los vídeos no se pueden narrar."
+  voice: "Voz"
+  speechToText: "voz → texto"
+  voiceNarrationHint: "Explica el flujo en voz alta y Mimik escribe cada paso con lo que dijiste."
   voiceNarration: "Narración por voz"
   voiceUsingAiKey: "No hay clave de voz, así que Mimik usa la clave de OpenAI de Descripciones con IA de arriba."
   aiNoKey: "No hay clave de API, así que los pasos usarán descripciones básicas por reglas."
@@ -234,6 +245,7 @@ editor:
   rewriteErrorNoApiKey: "A\xF1ade una clave de API de IA en los ajustes para reescribir texto."
   rewriteErrorFailed: "No se pudo reescribir la selecci\xF3n. Int\xE9ntalo de nuevo."
   rewriteErrorStale: "El texto cambi\xF3. Vuelve a seleccionarlo."
+  restoreSpoken: Restaurar lo que dijiste
 
 capture:
   recordSteps: Grabar pasos
@@ -375,6 +387,20 @@ annotationEditor:
   done: Listo
 
 exportPreview:
+  voiceover: "Voz en off"
+  voiceoverHint: "Lee cada paso en voz alta. Cada paso se mantiene hasta que termina la voz."
+  audio: "Audio"
+  audioSilent: "Silencioso"
+  audioNarrated: "Narrado"
+  voiceoverNoKey: "Añade una clave de OpenAI o ElevenLabs en Ajustes para narrar los vídeos."
+  videoLength: "Duración del vídeo $1"
+  videoLengthVoice: "Duración del vídeo $1 → $2 con voz en off"
+  voiceoverCost: "$1 clips · unos $2 caracteres a sintetizar"
+  voiceoverFailed: "La narración falló, así que este vídeo es mudo. Revisa la clave de API en Ajustes."
+  voiceoverNoAudioCodec: "Este navegador no puede codificar audio para vídeo, así que este vídeo es mudo."
+  voiceoverNoKeySkip: "No hay ninguna clave de API de narración configurada, así que este vídeo es mudo. Añade una en Ajustes."
+  voiceoverNothingToSay: "Esta guía no tiene texto que leer en voz alta, así que este vídeo es mudo."
+  narrating: "Narrando el paso $1 de $2"
   stepDescriptions: "Textos de paso"
   stepDescriptionsHint: "Dibujar el texto del paso en cada fotograma"
   resolution: "Calidad de vídeo"
@@ -420,6 +446,9 @@ videoPlayer:
   previousStep: "Paso anterior"
   nextStep: "Paso siguiente"
   speed: "Velocidad de reproducción"
+  mute: "Silenciar"
+  unmute: "Activar sonido"
+  spoken: "Paso narrado"
 
 exportMenu:
   docx: DOCX
@@ -592,3 +621,19 @@ import:
   errorVersion: "Este archivo se creó con una versión más reciente de Mimik. Actualiza Mimik e inténtalo de nuevo."
   errorEmpty: "Este archivo no tiene ningún paso."
   errorFailed: "No se pudo guardar la guía en tu biblioteca. Intenta importarla de nuevo."
+transcript:
+  title: Transcripción
+  empty: No se narró nada en esta grabación.
+  loadError: No se pudo cargar la transcripción. Inténtalo de nuevo.
+  filterAll: "Todo ($1)"
+  filterUnused: "Sin usar ($1)"
+  privacyNote: Todo lo que dijiste al grabar, guardado solo en este dispositivo. Nunca forma parte de una guía exportada y se elimina con la guía.
+  usedInStep: "Paso $1"
+  readOnlyHint: Activa Editar en la barra superior para añadir estas líneas a un paso.
+  notUsed: Sin usar
+  filteredOut: Descartado
+  addToStep: "Añadir al paso $1"
+  copyAll: Copiar todo
+  download: Descargar
+  delete: Eliminar transcripción
+  confirmDelete: ¿Eliminar esta transcripción? Lo que dijiste se perderá para siempre.

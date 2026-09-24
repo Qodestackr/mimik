@@ -46,6 +46,9 @@ library:
   openInFullView: "Ouvrir en plein écran"
   openDashboard: "Ouvrir le tableau de bord"
   openDashboardHint: "Parcourez, importez et exportez vos guides là-bas"
+  duplicate: Dupliquer
+  copyOfTitle: "Copie de $1"
+  duplicateFailed: Impossible de dupliquer ce guide
 
 guideme:
   live: En direct
@@ -100,6 +103,14 @@ settings:
   showKey: Afficher la clé
   hideKey: Masquer la clé
   aiLanguage: Langue des descriptions
+  voiceover: "Voix off de la vidéo"
+  textToSpeech: "texte → voix"
+  voiceoverHint: "Mimik lit le texte de chaque étape par-dessus la vidéo exportée."
+  voiceoverUsingAiKey: "Aucune clé de voix off n'est définie, Mimik utilise donc la clé OpenAI des Descriptions IA."
+  voiceoverNoKey: "Aucune clé API n'est définie, les vidéos ne peuvent donc pas être narrées."
+  voice: "Voix"
+  speechToText: "voix → texte"
+  voiceNarrationHint: "Explique le flux à voix haute et Mimik écrit chaque étape à partir de ce que tu as dit."
   voiceNarration: "Narration vocale"
   voiceUsingAiKey: "Aucune clé vocale n'est définie : Mimik utilise la clé OpenAI des descriptions IA ci-dessus."
   aiNoKey: "Aucune clé API définie, les étapes utiliseront donc des descriptions simples basées sur des règles."
@@ -234,6 +245,7 @@ editor:
   rewriteErrorNoApiKey: "Ajoutez une cl\xE9 d'API d'IA dans les r\xE9glages pour r\xE9\xE9crire du texte."
   rewriteErrorFailed: "Impossible de r\xE9\xE9crire la s\xE9lection. R\xE9essayez."
   rewriteErrorStale: "Le texte a chang\xE9. S\xE9lectionnez-le \xE0 nouveau."
+  restoreSpoken: Restaurer ce que vous avez dit
 
 capture:
   recordSteps: "Enregistrer des étapes"
@@ -375,6 +387,20 @@ annotationEditor:
   done: "Terminé"
 
 exportPreview:
+  voiceover: "Voix off"
+  voiceoverHint: "Lit chaque étape à voix haute. Chaque étape reste à l'écran jusqu'à la fin de la voix."
+  audio: "Audio"
+  audioSilent: "Muet"
+  audioNarrated: "Narré"
+  voiceoverNoKey: "Ajoutez une clé OpenAI ou ElevenLabs dans les Réglages pour narrer les vidéos."
+  videoLength: "Durée de la vidéo $1"
+  videoLengthVoice: "Durée de la vidéo $1 → $2 avec voix off"
+  voiceoverCost: "$1 clips · environ $2 caractères à synthétiser"
+  voiceoverFailed: "La narration a échoué, cette vidéo est donc muette. Vérifiez la clé API dans les Réglages."
+  voiceoverNoAudioCodec: "Ce navigateur ne peut pas encoder l'audio d'une vidéo, cette vidéo est donc muette."
+  voiceoverNoKeySkip: "Aucune clé API de narration n'est configurée, cette vidéo est donc muette. Ajoutez-en une dans les Réglages."
+  voiceoverNothingToSay: "Ce guide n'a aucun texte à lire à voix haute, cette vidéo est donc muette."
+  narrating: "Narration de l'étape $1 sur $2"
   stepDescriptions: "Textes d'étape"
   stepDescriptionsHint: "Incruster le texte de l'étape sur chaque image"
   resolution: "Qualité vidéo"
@@ -420,6 +446,9 @@ videoPlayer:
   previousStep: "Étape précédente"
   nextStep: "Étape suivante"
   speed: "Vitesse de lecture"
+  mute: "Couper le son"
+  unmute: "Activer le son"
+  spoken: "Étape narrée"
 
 exportMenu:
   docx: DOCX
@@ -592,3 +621,19 @@ import:
   errorVersion: "Ce fichier a été créé avec une version plus récente de Mimik. Mettez Mimik à jour, puis réessayez."
   errorEmpty: "Ce fichier ne contient aucune étape."
   errorFailed: "Le guide n’a pas pu être enregistré dans votre bibliothèque. Réessayez de l’importer."
+transcript:
+  title: Transcription
+  empty: Rien n’a été dit dans cet enregistrement.
+  loadError: Impossible de charger la transcription. Réessayez.
+  filterAll: "Tout ($1)"
+  filterUnused: "Non utilisé ($1)"
+  privacyNote: Tout ce que vous avez dit pendant l’enregistrement, conservé sur cet appareil uniquement. Il ne fait jamais partie d’un guide exporté et est supprimé avec le guide.
+  usedInStep: "Étape $1"
+  readOnlyHint: Active Modifier dans la barre du haut pour ajouter ces lignes à une étape.
+  notUsed: Non utilisé
+  filteredOut: Filtré
+  addToStep: "Ajouter à l’étape $1"
+  copyAll: Tout copier
+  download: Télécharger
+  delete: Supprimer la transcription
+  confirmDelete: Supprimer cette transcription ? Ce que vous avez dit sera perdu définitivement.

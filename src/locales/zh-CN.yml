@@ -46,6 +46,9 @@ library:
   openInFullView: 在完整视图中打开
   openDashboard: "打开面板"
   openDashboardHint: "在那里浏览、导入和导出指南"
+  duplicate: 创建副本
+  copyOfTitle: "$1 的副本"
+  duplicateFailed: 无法复制此指南
 
 guideme:
   live: 实时
@@ -100,6 +103,14 @@ settings:
   showKey: 显示密钥
   hideKey: 隐藏密钥
   aiLanguage: 描述语言
+  voiceover: "视频配音"
+  textToSpeech: "文字 → 语音"
+  voiceoverHint: "Mimik 会在导出的视频中朗读每个步骤的文本。"
+  voiceoverUsingAiKey: "未设置配音密钥，Mimik 将使用上方「AI 描述」中的 OpenAI 密钥。"
+  voiceoverNoKey: "未设置 API 密钥，因此无法为视频配音。"
+  voice: "语音"
+  speechToText: "语音 → 文字"
+  voiceNarrationHint: "边录边讲，Mimik 会根据你说的内容写出每个步骤。"
   voiceNarration: 语音讲解
   voiceUsingAiKey: "未设置语音密钥，因此 Mimik 会使用上方 AI 描述中的 OpenAI 密钥。"
   aiNoKey: "未设置 API 密钥，步骤将使用普通的规则描述。"
@@ -234,6 +245,7 @@ editor:
   rewriteErrorNoApiKey: 请在设置中添加 AI API 密钥以改写文本。
   rewriteErrorFailed: 无法改写选中文本。请重试。
   rewriteErrorStale: 文本已变化。请重新选择。
+  restoreSpoken: 恢复你说过的内容
 
 capture:
   recordSteps: 录制步骤
@@ -375,6 +387,20 @@ annotationEditor:
   done: 完成
 
 exportPreview:
+  voiceover: "配音"
+  voiceoverHint: "朗读每个步骤，画面会保持到语音结束。"
+  audio: "音频"
+  audioSilent: "静音"
+  audioNarrated: "配音"
+  voiceoverNoKey: "在设置中添加 OpenAI 或 ElevenLabs 密钥即可为视频配音。"
+  videoLength: "视频时长 $1"
+  videoLengthVoice: "视频时长 $1 → $2（含配音）"
+  voiceoverCost: "$1 段音频 · 约 $2 个字符待合成"
+  voiceoverFailed: "配音失败，此视频为无声。请在设置中检查 API 密钥。"
+  voiceoverNoAudioCodec: "此浏览器无法为视频编码音频，因此该视频为无声。"
+  voiceoverNoKeySkip: "未设置配音 API 密钥，因此该视频为无声。请在设置中添加。"
+  voiceoverNothingToSay: "该指南没有可朗读的文本，因此该视频为无声。"
+  narrating: "正在为第 $1 步配音，共 $2 步"
   stepDescriptions: "步骤说明"
   stepDescriptionsHint: "将步骤文字绘制到每一帧视频中"
   resolution: "视频质量"
@@ -420,6 +446,9 @@ videoPlayer:
   previousStep: "上一步"
   nextStep: "下一步"
   speed: "播放速度"
+  mute: "静音"
+  unmute: "取消静音"
+  spoken: "已配音的步骤"
 
 exportMenu:
   docx: DOCX
@@ -592,3 +621,19 @@ import:
   errorVersion: "这个文件来自更新版本的 Mimik。请更新 Mimik 后重试。"
   errorEmpty: "这个文件里没有任何步骤。"
   errorFailed: "无法把这个指南保存到你的库。请重新导入试试。"
+transcript:
+  title: 语音记录
+  empty: 此次录制没有语音旁白。
+  loadError: 无法加载语音记录，请重试。
+  filterAll: "全部 ($1)"
+  filterUnused: "未使用 ($1)"
+  privacyNote: 录制时你说过的全部内容，仅保存在本设备上。它不会出现在导出的指南里，并会随指南一起删除。
+  usedInStep: "步骤 $1"
+  readOnlyHint: 在顶部打开「编辑」，即可把这些语句加到某个步骤上。
+  notUsed: 未使用
+  filteredOut: 已过滤
+  addToStep: "添加到步骤 $1"
+  copyAll: 全部复制
+  download: 下载
+  delete: 删除语音记录
+  confirmDelete: 删除这份语音记录？你说过的内容将永久丢失。

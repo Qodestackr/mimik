@@ -37,6 +37,7 @@ Clica em gravar, faz o que precisa, e recebe um guia caprichado com capturas de 
   - [▶️ Reprodução Guide Me](#️-reprodução-guide-me)
   - [🎙️ Narração por voz (opcional)](#️-narração-por-voz-opcional)
   - [✏️ Editor de guias](#️-editor-de-guias)
+  - [🔊 Narração do vídeo (opcional)](#-narração-do-vídeo-opcional)
   - [📤 Exportação multi-formato](#-exportação-multi-formato)
 - [🔐 Privacidade e armazenamento](#-privacidade-e-armazenamento)
 - [🤝 Contribuir](#-contribuir)
@@ -159,6 +160,12 @@ Fala em voz alta enquanto grava e o Mimik transforma o que tu disse nas descriç
 áudio é transcrito com a tua própria key (OpenAI ou Groq) e casado com o passo a que pertence,
 então tu narra uma vez em vez de escrever cada passo na mão.
 
+A transcrição inteira fica guardada, não só o que virou passo. Abre **Transcrição** num guia pra ver
+tudo o que tu falou, inclusive as falas que não casaram com nada, e adiciona qualquer uma delas a um
+passo. Editar um passo também não destrói o original falado: o editor sempre consegue devolver o que
+tu realmente disse. A transcrição fica no teu dispositivo, nunca faz parte de um guia exportado e é apagada
+junto com o guia.
+
 <img src="https://github.com/user-attachments/assets/061fddc7-da65-4641-8b39-d30b80c36531" alt="Narração por voz" width="800" />
 
 <div align="right">
@@ -181,11 +188,21 @@ volta atrás pelo histórico de versões.
 
 </div>
 
+### 🔊 Narração do vídeo (opcional)
+
+Ative no painel de exportação e cada passo do vídeo será lido em voz alta, com sua própria chave da
+OpenAI ou ElevenLabs. Se você já configurou uma chave da OpenAI para as descrições com IA, o Mimik
+reaproveita — não há mais nada para assinar. Passos narrados ficam na tela até a voz terminar, então
+nada é cortado, e os clipes ficam em cache local para que reexportar o mesmo guia não custe nada.
+
+Desligada por padrão: ter uma chave nunca liga a narração; você liga.
+
 ### 📤 Exportação multi-formato
 
 Compartilha os guias no formato que melhor cabe no teu fluxo:
 
-- **Vídeo**: passo a passo narrado, mp4/H.264, com o cursor indo até cada alvo
+- **Vídeo**: passo a passo narrado, mp4/H.264, com o cursor indo até cada alvo — opcionalmente com uma
+  narração da ElevenLabs lendo cada passo, o que também deixa o vídeo adequado à Seção 508
 - **PDF**: pronto pra imprimir, A4 retrato com quebras de página automáticas
 - **DOCX**: abre e continua editando no Word
 - **HTML**: autônomo, compartilha em qualquer lugar, imagens embutidas em base64
@@ -207,7 +224,7 @@ Teus guias, passos e capturas ficam no teu dispositivo. Sem backend, sem conta, 
 
 Se tu está mascarando dados pessoais antes de compartilhar um guia, lê primeiro [o que o Smart Blur não alcança](#-smart-blur): ele não chega em iframes, shadow DOM nem texto desenhado dentro de imagens.
 
-Duas coisas saem do navegador, as duas documentadas na [política de privacidade](https://mimik.westpoint.io/privacy/): os ícones dos sites são buscados no serviço de favicons do Google, o que envia o domínio daquele site, e os recursos opcionais de IA e voz mandam texto ou áudio pro provedor que tu configurou.
+Duas coisas saem do navegador, as duas documentadas na [política de privacidade](https://mimik.westpoint.io/privacy/): os ícones dos sites são buscados no serviço de favicons do Google, o que envia o domínio daquele site, e os recursos opcionais de IA, narração por voz e narração do vídeo mandam texto ou áudio pro provedor que tu configurou — a narração do vídeo envia o texto de cada passo na hora de exportar, e só se tu ligar.
 
 <div align="right">
 

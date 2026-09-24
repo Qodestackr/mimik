@@ -1,4 +1,4 @@
-import { RotateCcw, Star, Trash2 } from 'lucide-react';
+import { Copy, RotateCcw, Star, Trash2 } from 'lucide-react';
 import { i18n } from '#imports';
 import { formatDate } from '@/lib/utils';
 import { useFullview } from '@/stores/fullview';
@@ -11,9 +11,17 @@ interface GuideListViewProps {
   onTrash: (e: React.MouseEvent, id: string) => void;
   onRestore: (e: React.MouseEvent, id: string) => void;
   onPermanentDelete: (e: React.MouseEvent, id: string) => void;
+  onDuplicate: (e: React.MouseEvent, id: string) => void;
 }
 
-export default function GuideListView({ category, onStar, onTrash, onRestore, onPermanentDelete }: GuideListViewProps) {
+export default function GuideListView({
+  category,
+  onStar,
+  onTrash,
+  onRestore,
+  onPermanentDelete,
+  onDuplicate,
+}: GuideListViewProps) {
   const { guides } = useFullview((s) => ({ guides: s.guides }));
 
   return (
@@ -50,6 +58,17 @@ export default function GuideListView({ category, onStar, onTrash, onRestore, on
                     </button>
                   </TooltipTrigger>
                   <TooltipContent>{guide.starred ? i18n.t('common_unstar') : i18n.t('common_star')}</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={(e) => onDuplicate(e, guide.id)}
+                      className="p-1.5 rounded-lg transition-colors text-purple hover:text-accent"
+                    >
+                      <Copy size={14} />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>{i18n.t('library_duplicate')}</TooltipContent>
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>

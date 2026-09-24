@@ -30,7 +30,11 @@ vi.mock('../tab-manager', () => ({
 
 vi.mock('../voice', () => ({
   getVoiceUpdate: () => ({ type: 'VOICE_UPDATE', phase: voicePhase }),
+  isNarrationLive: () => Promise.resolve(voicePhase === 'recording'),
+  isNarrationSettling: () => voicePhase === 'transcribing',
+  reportNarrationLost: vi.fn(),
   stopVoiceNarration: record('stopNarration'),
+  whenNarrationSettled: () => Promise.resolve(),
 }));
 
 vi.mock('@/lib/browser-api', () => ({ getActiveTab: () => Promise.resolve(activeTab) }));
@@ -139,18 +143,20 @@ describe('resumeCapture', () => {
   it('restarts narration only when the pause stopped it', async () => {
     voicePhase = 'recording';
     await pauseCapture('manual');
-    const onResume = vi.fn();
+    const onResume = vi.fn().mockResolvedValue(true);
 
     await resumeCapture(onResume);
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(onResume).toHaveBeenCalledOnce();
   });
 
   it('does not restart narration the user never had on', async () => {
     await pauseCapture('manual');
-    const onResume = vi.fn();
+    const onResume = vi.fn().mockResolvedValue(true);
 
     await resumeCapture(onResume);
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(onResume).not.toHaveBeenCalled();
   });
@@ -158,14 +164,16 @@ describe('resumeCapture', () => {
   it('does not restart narration twice across two pause cycles', async () => {
     voicePhase = 'recording';
     await pauseCapture('manual');
-    const first = vi.fn();
+    const first = vi.fn().mockResolvedValue(true);
     await resumeCapture(first);
+    await new Promise((resolve) => setTimeout(resolve, 0));
     expect(first).toHaveBeenCalledOnce();
 
     voicePhase = 'idle';
     await pauseCapture('manual');
-    const second = vi.fn();
+    const second = vi.fn().mockResolvedValue(true);
     await resumeCapture(second);
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(second).not.toHaveBeenCalled();
   });

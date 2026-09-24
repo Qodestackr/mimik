@@ -119,7 +119,7 @@ export default defineBackground(() => {
     getActor().subscribe(() => broadcastStateToPanel(getStateUpdate()));
   });
 
-  const resume = () => resumeFromPause(() => void startNarrationIfPossible());
+  const resume = () => resumeFromPause(startNarrationIfPossible);
 
   onMessage('getState', async () => {
     await waitUntilReady();
@@ -206,6 +206,11 @@ export default defineBackground(() => {
   onMessage('generateGuideDescription', ({ data }) => generateDescriptionOnDemand(data.guideId));
 
   onMessage('validateApiKey', ({ data }) => validateApiKey(data.provider, data.apiKey, data.baseUrl, data.model));
+
+  onMessage('listVoices', async ({ data }) => {
+    const { fetchVoices } = await import('@/core/export/voiceover/client');
+    return { voices: await fetchVoices(data.provider, data.apiKey).catch(() => []) };
+  });
 
   onMessage('rewriteSelection', ({ data }) => rewriteSelection(data.text, data.instruction));
 

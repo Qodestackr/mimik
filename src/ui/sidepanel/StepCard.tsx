@@ -1,7 +1,7 @@
-import { Check, Copy, Loader2, Trash2 } from 'lucide-react';
+import { Check, Copy, Loader2, Trash2, Undo2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { i18n } from '#imports';
-import { replaceScreenshot } from '@/core/guides/service';
+import { replaceScreenshot, restoreNarratedDescription } from '@/core/guides/service';
 import type { Screenshot, Step } from '@/core/guides/types';
 import { imageDimensions, renderScreenshot } from '@/core/screenshot/render';
 import { logger } from '@/lib/logger';
@@ -65,6 +65,16 @@ export default function StepCard({
     },
     !readOnly && !step.aiPending && Boolean(hasApiKey),
   );
+
+  const spoken = step.narratedDescription?.trim();
+  const canRestoreSpoken = !readOnly && !step.aiPending && Boolean(spoken) && spoken !== description.trim();
+
+  const handleRestoreSpoken = async () => {
+    const restored = await restoreNarratedDescription(step.id);
+    if (!restored) return;
+    setDescription(restored);
+    onChanged?.();
+  };
 
   const handleDelete = () => {
     setConfirmDelete(false);
@@ -154,6 +164,20 @@ export default function StepCard({
         <div className="flex items-center justify-between gap-2 mt-1">
           {step.aiPending ? <span /> : <StepSourceBadge source={step.descriptionSource} />}
           <div className="flex items-center gap-0.5">
+            {canRestoreSpoken && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => void handleRestoreSpoken()}
+                    aria-label={i18n.t('editor.restoreSpoken')}
+                    className="p-1 rounded-md transition-colors text-border hover:text-success"
+                  >
+                    <Undo2 size={13} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>{i18n.t('editor.restoreSpoken')}</TooltipContent>
+              </Tooltip>
+            )}
             {askAi.trigger}
             {screenshot && (
               <Tooltip>

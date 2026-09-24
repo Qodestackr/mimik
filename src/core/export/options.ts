@@ -43,6 +43,7 @@ export interface ExportOptions {
   gifQuality: GifQuality;
   bundleStripInputs: boolean;
   bundleUrls: BundleUrlMode;
+  voiceover: boolean;
 }
 
 export const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
@@ -55,6 +56,7 @@ export const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
   gifQuality: 'medium',
   bundleStripInputs: true,
   bundleUrls: 'path',
+  voiceover: false,
 };
 
 const bool = (value: unknown, fallback: boolean) => (typeof value === 'boolean' ? value : fallback);
@@ -77,6 +79,7 @@ export function normaliseExportOptions(value: unknown): ExportOptions {
     bundleUrls: BUNDLE_URL_MODES.includes(raw.bundleUrls as BundleUrlMode)
       ? (raw.bundleUrls as BundleUrlMode)
       : DEFAULT_EXPORT_OPTIONS.bundleUrls,
+    voiceover: bool(raw.voiceover, DEFAULT_EXPORT_OPTIONS.voiceover),
   };
 }
 

@@ -46,6 +46,9 @@ library:
   openInFullView: In der Vollansicht öffnen
   openDashboard: "Dashboard öffnen"
   openDashboardHint: "Dort kannst du Anleitungen ansehen, importieren und exportieren"
+  duplicate: Duplizieren
+  copyOfTitle: "Kopie von $1"
+  duplicateFailed: Diese Anleitung konnte nicht dupliziert werden
 
 guideme:
   manualStep: "Dieser Schritt wurde bearbeitet und kann nicht automatisch erkannt werden. Nutze Weiter, wenn du fertig bist."
@@ -112,6 +115,14 @@ settings:
   showKey: Schlüssel anzeigen
   hideKey: Schlüssel verbergen
   aiLanguage: Sprache der Beschreibungen
+  voiceover: "Video-Voiceover"
+  textToSpeech: "Text → Sprache"
+  voiceoverHint: "Mimik spricht den Text jedes Schritts über das exportierte Video."
+  voiceoverUsingAiKey: "Kein Voiceover-Schlüssel gesetzt – Mimik nutzt den OpenAI-Schlüssel aus den KI-Beschreibungen."
+  voiceoverNoKey: "Es ist kein API-Schlüssel gesetzt, daher können Videos nicht vertont werden."
+  voice: "Stimme"
+  speechToText: "Sprache → Text"
+  voiceNarrationHint: "Erkläre den Ablauf laut, und Mimik schreibt jeden Schritt aus dem, was du gesagt hast."
   voiceNarration: Sprachkommentar
   voiceUsingAiKey: "Es ist kein Sprach-Schlüssel gesetzt, daher nutzt Mimik den OpenAI-Schlüssel aus den KI-Beschreibungen oben."
   aiNoKey: "Kein API-Schlüssel gesetzt, daher verwenden Schritte einfache regelbasierte Beschreibungen."
@@ -234,6 +245,7 @@ editor:
   descriptionErrorSaveFailed: Die Beschreibung wurde erstellt, konnte aber nicht gespeichert werden. Versuche es erneut.
   writingStepDescription: "Beschreibung wird geschrieben…"
   transcribingStepDescription: "Deine Aufnahme wird transkribiert…"
+  restoreSpoken: Gesprochenen Text wiederherstellen
 
 capture:
   recordSteps: Schritte aufzeichnen
@@ -306,6 +318,20 @@ blurPanel:
   resetAll: Alles zurücksetzen
 
 exportPreview:
+  voiceover: "Voiceover"
+  voiceoverHint: "Liest jeden Schritt vor. Ein Schritt bleibt stehen, bis die Stimme endet."
+  audio: "Audio"
+  audioSilent: "Stumm"
+  audioNarrated: "Vertont"
+  voiceoverNoKey: "Hinterlege in den Einstellungen einen OpenAI- oder ElevenLabs-Schlüssel, um Videos zu vertonen."
+  videoLength: "Videolänge $1"
+  videoLengthVoice: "Videolänge $1 → $2 mit Voiceover"
+  voiceoverCost: "$1 Clips · etwa $2 Zeichen zu synthetisieren"
+  voiceoverFailed: "Die Vertonung ist fehlgeschlagen, dieses Video ist stumm. Prüfe den API-Schlüssel in den Einstellungen."
+  voiceoverNoAudioCodec: "Dieser Browser kann kein Audio für Videos kodieren, dieses Video ist stumm."
+  voiceoverNoKeySkip: "Es ist kein API-Schlüssel für die Vertonung gesetzt, dieses Video ist stumm. Füge einen in den Einstellungen hinzu."
+  voiceoverNothingToSay: "Diese Anleitung hat keinen Text zum Vorlesen, dieses Video ist stumm."
+  narrating: "Schritt $1 von $2 wird vertont"
   stepDescriptions: "Schritttexte"
   stepDescriptionsHint: "Den Schritttext in jedes Videobild einzeichnen"
   resolution: "Videoqualität"
@@ -351,6 +377,9 @@ videoPlayer:
   previousStep: "Vorheriger Schritt"
   nextStep: "Nächster Schritt"
   speed: "Wiedergabegeschwindigkeit"
+  mute: "Stummschalten"
+  unmute: "Ton einschalten"
+  spoken: "Vertonter Schritt"
 
 exportMenu:
   docx: "DOCX"
@@ -593,3 +622,19 @@ import:
   errorVersion: "Diese Datei stammt aus einer neueren Mimik-Version. Aktualisiere Mimik und versuche es erneut."
   errorEmpty: "Diese Datei enthält keine Schritte."
   errorFailed: "Die Anleitung konnte nicht in deiner Bibliothek gespeichert werden. Versuche den Import erneut."
+transcript:
+  title: Transkript
+  empty: In dieser Aufnahme wurde nichts gesprochen.
+  loadError: Transkript konnte nicht geladen werden. Bitte erneut versuchen.
+  filterAll: "Alle ($1)"
+  filterUnused: "Unbenutzt ($1)"
+  privacyNote: Alles, was du während der Aufnahme gesagt hast – nur auf diesem Gerät. Es ist nie Teil einer exportierten Anleitung und wird mit der Anleitung gelöscht.
+  usedInStep: "Schritt $1"
+  readOnlyHint: Schalte oben Bearbeiten ein, um diese Zeilen einem Schritt hinzuzufügen.
+  notUsed: Unbenutzt
+  filteredOut: Herausgefiltert
+  addToStep: "Zu Schritt $1 hinzufügen"
+  copyAll: Alles kopieren
+  download: Herunterladen
+  delete: Transkript löschen
+  confirmDelete: Dieses Transkript löschen? Das Gesprochene ist dann endgültig weg.
