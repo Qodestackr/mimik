@@ -60,6 +60,11 @@ describe('importGuide', () => {
     expect(loaded?.screenshots.size).toBe(1);
   });
 
+  it('collapses a multi-line title arriving in a bundle', async () => {
+    const id = await importGuide(makeBundle({ guide: { title: 'Set up\nyour profile', createdAt: 1 } }));
+    expect((await getGuide(id))?.guide.title).toBe('Set up your profile');
+  });
+
   it('mints new identifiers rather than reusing the ones in the file', async () => {
     const guideId = await importGuide(makeBundle());
     const loaded = await getGuide(guideId);

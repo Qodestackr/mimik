@@ -6,6 +6,7 @@ import type { ScreenshotEdits } from '@/core/screenshot/types';
 import type { ParsedBundle } from '@/core/transfer/parse';
 import { db } from './db';
 import { hashPayload } from './snapshot-hash';
+import { sanitizeGuideTitle } from './title';
 import type {
   BlockType,
   CalloutVariant,
@@ -83,7 +84,7 @@ export async function getTrashedGuides(): Promise<Guide[]> {
 }
 
 export async function updateGuideTitle(id: string, title: string): Promise<void> {
-  await db.guides.update(id, { title, updatedAt: Date.now() });
+  await db.guides.update(id, { title: sanitizeGuideTitle(title), updatedAt: Date.now() });
   notifyGuidesChanged({ type: 'mutated' });
 }
 
@@ -179,7 +180,7 @@ export async function importGuide(bundle: ParsedBundle): Promise<string> {
 
   const guide: Guide = {
     id: guideId,
-    title: manifest.guide.title,
+    title: sanitizeGuideTitle(manifest.guide.title),
     ...(manifest.guide.description ? { description: manifest.guide.description } : {}),
     createdAt: now,
     updatedAt: now,
@@ -704,7 +705,7 @@ export async function revertToSnapshot(snapshotId: string): Promise<Snapshot | n
       .filter((r): r is Screenshot => r !== null);
     if (merged.length > 0) await db.screenshots.bulkPut(merged);
     await db.guides.update(snapshot.guideId, {
-      title: snapshot.title,
+      title: sanitizeGuideTitle(snapshot.title),
       stepIds: snapshot.stepIds,
       updatedAt: Date.now(),
     });

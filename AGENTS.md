@@ -51,7 +51,7 @@ src/
 │   │   ├── scrub.ts             # scrubValues (removes typed values from prose)
 │   │   ├── bundle.ts            # exportGuideAsBundle (zip via fflate)
 │   │   └── parse.ts             # readBundle (unzip + validate)
-│   └── guides/              # Data layer: types, Dexie DB, CRUD service, transcript timeline
+│   └── guides/              # Data layer: types, Dexie DB, CRUD service, title rules, transcript timeline
 ├── entrypoints/             # Chrome extension entry points (WXT)
 │   ├── background/          # Service worker: state machine, message handlers, tab management
 │   ├── content.ts           # Content script: CaptureSession, event listeners
@@ -427,4 +427,5 @@ Font: Poppins (loaded via `@fontsource/poppins`).
 - **Font loading** uses `@fontsource/poppins` (CSP-safe, no CDN dependency)
 - **Cross-context sync** via BroadcastChannel — star/delete events update other views without full reload
 - **Bundle export flattens before it ships** — `redact` annotations are drawn at render time, so `screenshot.blob` still holds the unblurred capture. `flattenScreenshot` burns redactions into the pixels and drops the annotation, and bakes an *explicit* crop (rebasing annotations and resolving `bounds` into an explicit target). The automatic zoom-to-target crop stays as data. Anything that ships a screenshot outside the browser must go through the renderer
+- **Guide titles are single-line**, normalised by `sanitizeGuideTitle` on every write path: `updateGuideTitle`, `importGuide`, `revertToSnapshot` and the AI meta path. Each renderer downstream already assumed it. The HTML and PDF covers clamp to `MAX_TITLE_LINES`, their running headers to one line, the video cover card wraps to two, the sidepanel truncates, and Markdown writes `# <title>`, where a newline ends the heading and spills the rest into the body. A fifth write path needs the same call. `MAX_TITLE_LENGTH` bounds the AI-generated title only (`core/capture/ai/meta.ts`); a typed title is deliberately uncapped, since every renderer above already clamps and a silent stop at 70 characters gave the user no reason for it
 - **Imports re-mint every id** — `importGuide` mints new guide/step/screenshot ids in one Dexie transaction. Reusing the ids in the file would let a shared guide overwrite one the recipient recorded. It also clears `aiPending`, which no background job will ever resolve for an imported step

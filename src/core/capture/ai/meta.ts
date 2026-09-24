@@ -1,4 +1,5 @@
 import { generateObject, generateText, jsonSchema } from 'ai';
+import { MAX_TITLE_LENGTH, sanitizeGuideTitle } from '@/core/guides/title';
 import { localStorage } from '@/lib/browser-api';
 import { logger } from '@/lib/logger';
 import { GUIDE_META_JSON_SUFFIX, GUIDE_META_PROMPT, getLanguageSuffix } from './prompts';
@@ -9,7 +10,6 @@ export interface GuideMeta {
   description?: string;
 }
 
-const MAX_TITLE_LENGTH = 70;
 const MAX_BARE_TITLE_LENGTH = 100;
 const FENCE = /^```(?:json)?\s*|\s*```$/g;
 
@@ -24,7 +24,7 @@ const guideMetaSchema = jsonSchema<{ title: string; description?: string | null 
 });
 
 function toGuideMeta(rawTitle: unknown, rawDescription: unknown): GuideMeta | null {
-  let title = typeof rawTitle === 'string' ? rawTitle.trim().replace(/^"|"$/g, '') : '';
+  let title = typeof rawTitle === 'string' ? sanitizeGuideTitle(rawTitle).replace(/^"|"$/g, '') : '';
   if (!title) return null;
   if (title.length > MAX_TITLE_LENGTH) title = `${title.slice(0, MAX_TITLE_LENGTH - 3)}...`;
 
